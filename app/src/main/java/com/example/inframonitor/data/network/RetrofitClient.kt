@@ -6,7 +6,16 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitClient {
-    private const val BASE_URL = "https://api-infra.andr3sdev7.com/"
+    private var currentBaseUrl: String = "https://api-infra.andr3sdev7.com/"
+    private var _instance: ServerApi? = null
+
+    fun updateBaseUrl(newUrl: String) {
+        val sanitizedUrl = if (newUrl.endsWith("/")) newUrl else "$newUrl/"
+        if (currentBaseUrl != sanitizedUrl) {
+            currentBaseUrl = sanitizedUrl
+            _instance = null
+        }
+    }
 
     private val logging = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
@@ -16,13 +25,16 @@ object RetrofitClient {
         .addInterceptor(logging)
         .build()
 
-    val instance: ServerApi by lazy {
-        val retrofit = Retrofit.Builder()
-            .baseUrl(BASE_URL)
-            .client(client)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-        
-        retrofit.create(ServerApi::class.java)
-    }
+    val instance: ServerApi
+        get() {
+            if (_instance == null) {
+                _instance = Retrofit.Builder()
+                    .baseUrl(currentBaseUrl)
+                    .client(client)
+                    .addConverterFactory(GsonConverterFactory.create())
+                    .build()
+                    .create(ServerApi::class.java)
+            }
+            return _instance!!
+        }
 }

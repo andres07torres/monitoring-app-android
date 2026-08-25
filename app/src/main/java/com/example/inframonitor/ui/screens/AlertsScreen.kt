@@ -114,8 +114,14 @@ fun AlertItem(alert: AlertResponse) {
                         color = color.copy(alpha = 0.1f),
                         shape = RoundedCornerShape(4.dp)
                     ) {
+                        val severityText = when(alert.severity.uppercase()) {
+                            "HIGH", "CRITICAL" -> "CRÍTICA"
+                            "MEDIUM", "WARNING" -> "ADVERTENCIA"
+                            "LOW", "SUCCESS" -> "BAJA"
+                            else -> alert.severity
+                        }
                         Text(
-                            alert.severity,
+                            severityText,
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                             style = MaterialTheme.typography.labelSmall,
                             color = color,

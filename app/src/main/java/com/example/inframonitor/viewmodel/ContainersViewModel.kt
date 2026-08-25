@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.inframonitor.data.models.ContainerResponse
 import com.example.inframonitor.data.network.RetrofitClient
 import com.example.inframonitor.ui.UiState
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -49,7 +50,36 @@ class ContainersViewModel : ViewModel() {
                     fetchContainers()
                 }
             } catch (e: Exception) {
-                // Podríamos exponer un canal de errores para Toasts
+                // Manejar error
+            }
+        }
+    }
+
+    fun restartContainer(containerId: String) {
+        viewModelScope.launch {
+            try {
+                // 1. Detener el contenedor
+                RetrofitClient.instance.stopContainer(containerId)
+                
+                // Actualizar UI localmente para feedback inmediato
+                _uiState.value = if (_uiState.value is UiState.Success) {
+                    val currentList = (_uiState.value as UiState.Success).data
+                    UiState.Success(currentList.map { 
+                        if (it.id == containerId) it.copy(status = "reiniciando...") else it
+                    })
+                } else _uiState.value
+
+                // 2. Esperar 5 segundos
+                delay(5000)
+
+                // 3. Volver a activarlo
+                RetrofitClient.instance.startContainer(containerId)
+                
+                // Refrescar lista completa del servidor
+                fetchContainers()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                fetchContainers() // Volver al estado real si falla
             }
         }
     }

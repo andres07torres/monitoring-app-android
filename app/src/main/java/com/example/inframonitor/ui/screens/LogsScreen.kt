@@ -5,10 +5,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,7 +32,6 @@ fun LogsScreen(
     val logsState by logsViewModel.uiState.collectAsState()
     val containersState by containersViewModel.uiState.collectAsState()
     
-    var searchQuery by remember { mutableStateOf("") }
     var selectedContainerId by remember { mutableStateOf<String?>(null) }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -57,19 +56,6 @@ fun LogsScreen(
             }
             
             Spacer(modifier = Modifier.height(16.dp))
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Buscar en los registros...", fontSize = 14.sp) },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(20.dp)) },
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-                ),
-                singleLine = true
-            )
-            Spacer(modifier = Modifier.height(16.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(modifier = Modifier.size(6.dp).background(Color(0xFFF04438), CircleShape))
                 Spacer(modifier = Modifier.width(8.dp))
@@ -90,13 +76,10 @@ fun LogsScreen(
                         CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                     }
                     is UiState.Success -> {
-                        val filteredLogs = state.data.filter {
-                            it.contains(searchQuery, ignoreCase = true)
-                        }
-                        if (filteredLogs.isEmpty()) {
+                        if (state.data.isEmpty()) {
                             Text("No hay registros para mostrar", modifier = Modifier.align(Alignment.Center), color = MaterialTheme.colorScheme.secondary)
                         } else {
-                            LogsList(filteredLogs)
+                            LogsList(state.data)
                         }
                     }
                     is UiState.Error -> {
@@ -119,13 +102,26 @@ fun LogsScreen(
 
 @Composable
 fun LogsList(logs: List<String>) {
+    val listState = rememberLazyListState()
+
+    // Auto-scroll al final cuando llegan nuevos logs
+    LaunchedEffect(logs.size) {
+        if (logs.isNotEmpty()) {
+            listState.animateScrollToItem(logs.size - 1)
+        }
+    }
+
     Card(
-        modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 16.dp).fillMaxSize(),
+        modifier = Modifier
+            .padding(horizontal = 16.dp)
+            .padding(bottom = 16.dp)
+            .fillMaxSize(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = CardDefaults.outlinedCardBorder()
     ) {
         LazyColumn(
+            state = listState,
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {

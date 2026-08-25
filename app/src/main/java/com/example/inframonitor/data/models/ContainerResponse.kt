@@ -10,7 +10,10 @@ data class SystemStatsResponse(
     val cpu_percent: Double,
     val ram_percent: Double,
     val ram_used_gb: Double,
-    val ram_total_gb: Double
+    val ram_total_gb: Double,
+    val disk_percent: Double? = null,
+    val disk_used_gb: Double? = null,
+    val disk_total_gb: Double? = null
 )
 
 // Tarea 2: Logs como lista de Strings

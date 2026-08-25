@@ -24,15 +24,16 @@ import com.example.inframonitor.data.models.SystemStatsResponse
 import com.example.inframonitor.ui.UiState
 import com.example.inframonitor.viewmodel.DashboardData
 import com.example.inframonitor.viewmodel.DashboardViewModel
+import com.example.inframonitor.ui.theme.*
 
 @Composable
 fun DashboardScreen(viewModel: DashboardViewModel = viewModel()) {
     val uiState by viewModel.uiState.collectAsState()
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize().background(Background)) {
         when (val state = uiState) {
             is UiState.Loading -> {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = Primary)
             }
             is UiState.Success -> {
                 DashboardContent(state.data, onRefresh = { viewModel.refresh() })
@@ -42,8 +43,12 @@ fun DashboardScreen(viewModel: DashboardViewModel = viewModel()) {
                     modifier = Modifier.align(Alignment.Center).padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(text = state.message, color = MaterialTheme.colorScheme.error)
-                    Button(onClick = { viewModel.refresh() }, modifier = Modifier.padding(top = 8.dp)) {
+                    Text(text = state.message, color = Error)
+                    Button(
+                        onClick = { viewModel.refresh() }, 
+                        modifier = Modifier.padding(top = 8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Primary)
+                    ) {
                         Text("Reintentar")
                     }
                 }
@@ -60,7 +65,7 @@ fun DashboardContent(data: DashboardData, onRefresh: () -> Unit) {
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
+        contentPadding = PaddingValues(24.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
         item {
@@ -70,8 +75,11 @@ fun DashboardContent(data: DashboardData, onRefresh: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 SectionHeader("Recursos del host")
-                IconButton(onClick = onRefresh) {
-                    Icon(Icons.Default.Refresh, contentDescription = "Actualizar", tint = MaterialTheme.colorScheme.primary)
+                IconButton(
+                    onClick = onRefresh,
+                    modifier = Modifier.background(Surface, CircleShape).size(36.dp)
+                ) {
+                    Icon(Icons.Default.Refresh, contentDescription = "Actualizar", tint = Primary, modifier = Modifier.size(18.dp))
                 }
             }
             Spacer(modifier = Modifier.height(12.dp))
@@ -82,7 +90,7 @@ fun DashboardContent(data: DashboardData, onRefresh: () -> Unit) {
                     "${stats.cpu_percent.toInt()}%", 
                     "8 núcleos", 
                     "2.4 GHz prom.", 
-                    MaterialTheme.colorScheme.primary
+                    Primary
                 )
                 MetricCard(
                     "Memoria", 
@@ -90,15 +98,15 @@ fun DashboardContent(data: DashboardData, onRefresh: () -> Unit) {
                     "${stats.ram_percent.toInt()}%", 
                     "${stats.ram_used_gb} GB usados", 
                     "${stats.ram_total_gb} GB total",
-                    Color(0xFF12B76A)
+                    Success
                 )
                 MetricCard(
                     "Almacenamiento", 
-                    0.71f, 
-                    "71%", 
-                    "355 GB usados", 
-                    "500 GB total", 
-                    Color(0xFFF79009)
+                    (stats.disk_percent?.toFloat() ?: 0f) / 100f, 
+                    "${stats.disk_percent?.toInt() ?: 0}%", 
+                    "${stats.disk_used_gb ?: 0.0} GB usados", 
+                    "${stats.disk_total_gb ?: 0.0} GB total",
+                    Warning
                 )
             }
         }
@@ -109,16 +117,16 @@ fun DashboardContent(data: DashboardData, onRefresh: () -> Unit) {
             if (activeContainers.isEmpty()) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Surface),
                     border = CardDefaults.outlinedCardBorder()
                 ) {
-                    Box(modifier = Modifier.padding(24.dp).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        Text("No hay servicios activos", color = MaterialTheme.colorScheme.secondary)
+                    Box(modifier = Modifier.padding(32.dp).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        Text("No hay servicios activos", color = TextMuted)
                     }
                 }
             } else {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     activeContainers.forEach { container ->
                         ActiveServiceItem(container)
                     }
@@ -132,9 +140,10 @@ fun DashboardContent(data: DashboardData, onRefresh: () -> Unit) {
 fun SectionHeader(title: String) {
     Text(
         text = title,
-        style = MaterialTheme.typography.titleSmall.copy(
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
+        style = MaterialTheme.typography.titleMedium.copy(
+            fontWeight = FontWeight.ExtraBold,
+            color = TextPrimary,
+            letterSpacing = (-0.5).sp
         )
     )
 }
@@ -150,20 +159,21 @@ fun MetricCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = CardDefaults.outlinedCardBorder()
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Surface),
+        border = CardDefaults.outlinedCardBorder(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(20.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(title, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-                Text(percentage, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                Text(title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = TextPrimary)
+                Text(percentage, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = progressColor)
             }
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             LinearProgressIndicator(
                 progress = { progress },
                 modifier = Modifier
@@ -173,13 +183,13 @@ fun MetricCard(
                 color = progressColor,
                 trackColor = progressColor.copy(alpha = 0.1f)
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(subLeft, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
-                Text(subRight, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
+                Text(subLeft, style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                Text(subRight, style = MaterialTheme.typography.bodySmall, color = TextSecondary)
             }
         }
     }
@@ -189,25 +199,32 @@ fun MetricCard(
 fun ActiveServiceItem(container: ContainerResponse) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = CardDefaults.outlinedCardBorder()
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Surface),
+        border = CardDefaults.outlinedCardBorder(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(8.dp)
-                    .background(Color(0xFF12B76A), CircleShape)
+                    .size(10.dp)
+                    .background(Success, CircleShape)
             )
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(container.name, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                Text("Docker Container · Running", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
+                Text(container.name, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = TextPrimary)
+                Text("Contenedor Docker · Activo", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
             }
-            Text("Active", fontWeight = FontWeight.Medium, fontSize = 14.sp, color = Color(0xFF12B76A))
+            Text(
+                "ACTIVO",
+                fontWeight = FontWeight.ExtraBold, 
+                fontSize = 11.sp, 
+                color = Success,
+                letterSpacing = 1.sp
+            )
         }
     }
 }
