@@ -13,4 +13,16 @@ interface ServerApi {
 
     @GET("/api/v1/containers")
     suspend fun getContainers(): Response<List<ContainerResponse>>
+
+    @retrofit2.http.POST("/api/v1/containers/{id}/start")
+    suspend fun startContainer(@retrofit2.http.Path("id") id: String): Response<Unit>
+
+    @retrofit2.http.POST("/api/v1/containers/{id}/stop")
+    suspend fun stopContainer(@retrofit2.http.Path("id") id: String): Response<Unit>
+
+    @GET("/api/v1/logs")
+    suspend fun getLogs(@retrofit2.http.Query("container_id") containerId: String? = null): Response<List<com.example.inframonitor.data.models.LogResponse>>
+
+    @GET("/api/v1/alerts")
+    suspend fun getAlerts(): Response<List<com.example.inframonitor.data.models.AlertResponse>>
 }

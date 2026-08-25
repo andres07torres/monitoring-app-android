@@ -12,3 +12,19 @@ data class SystemStatsResponse(
     val ram_used_gb: Double,
     val ram_total_gb: Double
 )
+
+data class LogResponse(
+    val time: String,
+    val level: String,
+    val tag: String,
+    val message: String
+)
+
+data class AlertResponse(
+    val id: String,
+    val title: String,
+    val description: String,
+    val time: String,
+    val metadata: String,
+    val severity: String // "critical", "warning", "info"
+)
