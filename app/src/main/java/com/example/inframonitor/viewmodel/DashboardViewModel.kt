@@ -2,6 +2,7 @@ package com.example.inframonitor.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.inframonitor.data.models.ContainerResponse
 import com.example.inframonitor.data.models.SystemStatsResponse
 import com.example.inframonitor.data.network.RetrofitClient
 import com.example.inframonitor.ui.UiState
@@ -11,10 +12,15 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+data class DashboardData(
+    val stats: SystemStatsResponse,
+    val containers: List<ContainerResponse>
+)
+
 class DashboardViewModel : ViewModel() {
 
-    private val _uiState = MutableStateFlow<UiState<SystemStatsResponse>>(UiState.Loading)
-    val uiState: StateFlow<UiState<SystemStatsResponse>> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow<UiState<DashboardData>>(UiState.Loading)
+    val uiState: StateFlow<UiState<DashboardData>> = _uiState.asStateFlow()
 
     init {
         startPolling()
@@ -23,22 +29,32 @@ class DashboardViewModel : ViewModel() {
     private fun startPolling() {
         viewModelScope.launch {
             while (true) {
-                fetchStats()
+                fetchDashboardData()
                 delay(5000)
             }
         }
     }
 
-    private suspend fun fetchStats() {
+    private suspend fun fetchDashboardData() {
         try {
-            val response = RetrofitClient.instance.getSystemStats()
-            if (response.isSuccessful && response.body() != null) {
-                _uiState.value = UiState.Success(response.body()!!)
+            val statsResponse = RetrofitClient.instance.getSystemStats()
+            val containersResponse = RetrofitClient.instance.getContainers()
+
+            if (statsResponse.isSuccessful && containersResponse.isSuccessful) {
+                val stats = statsResponse.body()
+                val containers = containersResponse.body()
+                if (stats != null && containers != null) {
+                    _uiState.value = UiState.Success(DashboardData(stats, containers))
+                }
             } else {
-                _uiState.value = UiState.Error("Error al obtener estadísticas: ${response.code()}")
+                if (_uiState.value !is UiState.Success) {
+                    _uiState.value = UiState.Error("Error al sincronizar con el servidor")
+                }
             }
         } catch (e: Exception) {
-            _uiState.value = UiState.Error(e.message ?: "Error desconocido")
+            if (_uiState.value !is UiState.Success) {
+                _uiState.value = UiState.Error(e.message ?: "Error de conexión")
+            }
         }
     }
 }

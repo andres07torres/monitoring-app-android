@@ -17,8 +17,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.inframonitor.data.models.ContainerResponse
 import com.example.inframonitor.data.models.SystemStatsResponse
 import com.example.inframonitor.ui.UiState
+import com.example.inframonitor.viewmodel.DashboardData
 import com.example.inframonitor.viewmodel.DashboardViewModel
 
 @Composable
@@ -45,7 +47,11 @@ fun DashboardScreen(viewModel: DashboardViewModel = viewModel()) {
 }
 
 @Composable
-fun DashboardContent(stats: SystemStatsResponse) {
+fun DashboardContent(data: DashboardData) {
+    val stats = data.stats
+    val containers = data.containers
+    val activeContainers = containers.filter { it.status == "running" }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
@@ -79,6 +85,29 @@ fun DashboardContent(stats: SystemStatsResponse) {
                     "500 GB total", 
                     Color(0xFFF79009)
                 )
+            }
+        }
+
+        item {
+            SectionHeader("Servicios Activos")
+            Spacer(modifier = Modifier.height(12.dp))
+            if (activeContainers.isEmpty()) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = CardDefaults.outlinedCardBorder()
+                ) {
+                    Box(modifier = Modifier.padding(24.dp).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        Text("No hay servicios activos", color = MaterialTheme.colorScheme.secondary)
+                    }
+                }
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    activeContainers.forEach { container ->
+                        ActiveServiceItem(container)
+                    }
+                }
             }
         }
 
@@ -148,8 +177,7 @@ fun MetricCard(
 }
 
 @Composable
-fun NodeItem(name: String, type: String, temp: String, usage: String, isHealthy: Boolean) {
-    val statusColor = if (isHealthy) Color(0xFF12B76A) else Color(0xFFF79009)
+fun ActiveServiceItem(container: ContainerResponse) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -163,14 +191,14 @@ fun NodeItem(name: String, type: String, temp: String, usage: String, isHealthy:
             Box(
                 modifier = Modifier
                     .size(8.dp)
-                    .background(statusColor, CircleShape)
+                    .background(Color(0xFF12B76A), CircleShape)
             )
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(name, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                Text("$type · $temp", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
+                Text(container.name, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                Text("Docker Container · Running", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
             }
-            Text(usage, fontWeight = FontWeight.Medium, fontSize = 14.sp, color = MaterialTheme.colorScheme.secondary)
+            Text("Active", fontWeight = FontWeight.Medium, fontSize = 14.sp, color = Color(0xFF12B76A))
         }
     }
 }
