@@ -35,6 +35,13 @@ class DashboardViewModel : ViewModel() {
         }
     }
 
+    fun refresh() {
+        viewModelScope.launch {
+            _uiState.value = UiState.Loading
+            fetchDashboardData()
+        }
+    }
+
     private suspend fun fetchDashboardData() {
         try {
             val statsResponse = RetrofitClient.instance.getSystemStats()

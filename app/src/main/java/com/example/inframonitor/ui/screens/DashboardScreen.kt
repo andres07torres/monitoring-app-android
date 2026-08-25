@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -33,21 +35,25 @@ fun DashboardScreen(viewModel: DashboardViewModel = viewModel()) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             }
             is UiState.Success -> {
-                DashboardContent(state.data)
+                DashboardContent(state.data, onRefresh = { viewModel.refresh() })
             }
             is UiState.Error -> {
-                Text(
-                    text = state.message,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.align(Alignment.Center).padding(16.dp)
-                )
+                Column(
+                    modifier = Modifier.align(Alignment.Center).padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(text = state.message, color = MaterialTheme.colorScheme.error)
+                    Button(onClick = { viewModel.refresh() }, modifier = Modifier.padding(top = 8.dp)) {
+                        Text("Reintentar")
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-fun DashboardContent(data: DashboardData) {
+fun DashboardContent(data: DashboardData, onRefresh: () -> Unit) {
     val stats = data.stats
     val containers = data.containers
     val activeContainers = containers.filter { it.status == "running" }
@@ -58,7 +64,16 @@ fun DashboardContent(data: DashboardData) {
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
         item {
-            SectionHeader("Recursos del host")
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                SectionHeader("Recursos del host")
+                IconButton(onClick = onRefresh) {
+                    Icon(Icons.Default.Refresh, contentDescription = "Actualizar", tint = MaterialTheme.colorScheme.primary)
+                }
+            }
             Spacer(modifier = Modifier.height(12.dp))
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 MetricCard(
@@ -109,12 +124,6 @@ fun DashboardContent(data: DashboardData) {
                     }
                 }
             }
-        }
-
-        item {
-            SectionHeader("Disponibilidad - 24 h")
-            Spacer(modifier = Modifier.height(12.dp))
-            AvailabilityChart()
         }
     }
 }
@@ -199,37 +208,6 @@ fun ActiveServiceItem(container: ContainerResponse) {
                 Text("Docker Container · Running", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
             }
             Text("Active", fontWeight = FontWeight.Medium, fontSize = 14.sp, color = Color(0xFF12B76A))
-        }
-    }
-}
-
-@Composable
-fun AvailabilityChart() {
-    Column {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(24.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            repeat(20) { index ->
-                val color = if (index == 6) Color(0xFFF04438) else Color(0xFF12B76A)
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .background(color, RoundedCornerShape(2.dp))
-                )
-            }
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text("00:00", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
-            Text("caída · plex-media 04:12-04:40", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
-            Text("23:59", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
         }
     }
 }

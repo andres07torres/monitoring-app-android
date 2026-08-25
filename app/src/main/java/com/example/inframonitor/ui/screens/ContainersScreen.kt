@@ -71,11 +71,17 @@ fun ContainersContent(containers: List<ContainerResponse>, viewModel: Containers
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
             modifier = Modifier.padding(16.dp).fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text("Contenedores", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-            Spacer(modifier = Modifier.width(4.dp))
-            Text("- ${filteredContainers.size}", color = MaterialTheme.colorScheme.secondary, fontSize = 14.sp)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Contenedores", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("- ${filteredContainers.size}", color = MaterialTheme.colorScheme.secondary, fontSize = 14.sp)
+            }
+            IconButton(onClick = { viewModel.fetchContainers() }) {
+                Icon(Icons.Default.Refresh, contentDescription = "Actualizar", tint = MaterialTheme.colorScheme.primary)
+            }
         }
 
         Row(
