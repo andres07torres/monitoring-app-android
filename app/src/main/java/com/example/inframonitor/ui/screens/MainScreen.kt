@@ -20,11 +20,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.inframonitor.ui.screens.DashboardScreen
-import com.example.inframonitor.ui.screens.ContainersScreen
-import com.example.inframonitor.ui.screens.LogsScreen
-import com.example.inframonitor.ui.screens.AlertsScreen
-import com.example.inframonitor.ui.screens.WebAccessScreen
 import com.example.inframonitor.ui.theme.*
 
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
@@ -32,7 +27,6 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
     data object Containers : Screen("containers", "Servicios", Icons.Default.Layers)
     data object Logs : Screen("logs", "Registros", Icons.Default.Description)
     data object Alerts : Screen("alerts", "Alertas", Icons.Default.Notifications)
-    data object WebAccess : Screen("web_access", "Web", Icons.Default.Language)
 }
 
 @Composable
@@ -64,8 +58,7 @@ fun MainScreen(onLogout: () -> Unit) {
         Screen.Dashboard,
         Screen.Containers,
         Screen.Logs,
-        Screen.Alerts,
-        Screen.WebAccess
+        Screen.Alerts
     )
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -164,7 +157,6 @@ fun MainScreen(onLogout: () -> Unit) {
                 composable(Screen.Containers.route) { ContainersScreen() }
                 composable(Screen.Logs.route) { LogsScreen() }
                 composable(Screen.Alerts.route) { AlertsScreen() }
-                composable(Screen.WebAccess.route) { WebAccessScreen() }
             }
         }
     }
