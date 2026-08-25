@@ -13,18 +13,14 @@ data class SystemStatsResponse(
     val ram_total_gb: Double
 )
 
-data class LogResponse(
-    val time: String,
-    val level: String,
-    val tag: String,
-    val message: String
+// Tarea 2: Logs como lista de Strings
+data class ContainerLogsResponse(
+    val logs: List<String>
 )
 
+// Tarea 1: Modelo exacto de Alerta según JSON recibido
 data class AlertResponse(
     val id: String,
-    val title: String,
-    val description: String,
-    val time: String,
-    val metadata: String,
-    val severity: String // "critical", "warning", "info"
+    val severity: String,
+    val message: String
 )

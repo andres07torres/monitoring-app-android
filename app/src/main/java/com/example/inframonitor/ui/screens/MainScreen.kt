@@ -19,12 +19,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.inframonitor.viewmodel.MainViewModel
 
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
     data object Dashboard : Screen("dashboard", "Resumen", Icons.Default.Dashboard)
@@ -35,7 +33,7 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(mainViewModel: MainViewModel = viewModel()) {
+fun MainScreen() {
     val navController = rememberNavController()
     val items = listOf(
         Screen.Dashboard,
@@ -144,10 +142,10 @@ fun MainScreen(mainViewModel: MainViewModel = viewModel()) {
                 navController = navController,
                 startDestination = Screen.Dashboard.route
             ) {
-                composable(Screen.Dashboard.route) { DashboardScreen(mainViewModel) }
-                composable(Screen.Containers.route) { ContainersScreen(mainViewModel) }
-                composable(Screen.Logs.route) { LogsScreen(mainViewModel) }
-                composable(Screen.Alerts.route) { AlertsScreen(mainViewModel) }
+                composable(Screen.Dashboard.route) { DashboardScreen() }
+                composable(Screen.Containers.route) { ContainersScreen() }
+                composable(Screen.Logs.route) { LogsScreen() }
+                composable(Screen.Alerts.route) { AlertsScreen() }
             }
         }
     }

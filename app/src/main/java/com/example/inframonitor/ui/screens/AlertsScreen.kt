@@ -15,13 +15,45 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.inframonitor.data.models.AlertResponse
-import com.example.inframonitor.viewmodel.MainViewModel
+import com.example.inframonitor.ui.UiState
+import com.example.inframonitor.viewmodel.AlertsViewModel
 
 @Composable
-fun AlertsScreen(viewModel: MainViewModel) {
-    val alerts by viewModel.alerts.collectAsState()
+fun AlertsScreen(viewModel: AlertsViewModel = viewModel()) {
+    val uiState by viewModel.uiState.collectAsState()
 
+    Box(modifier = Modifier.fillMaxSize()) {
+        when (val state = uiState) {
+            is UiState.Loading -> {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            }
+            is UiState.Success -> {
+                AlertsContent(state.data)
+            }
+            is UiState.Error -> {
+                Column(
+                    modifier = Modifier.align(Alignment.Center).padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = state.message,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(onClick = { viewModel.fetchAlerts() }) {
+                        Text("Reintentar")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AlertsContent(alerts: List<AlertResponse>) {
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -32,13 +64,19 @@ fun AlertsScreen(viewModel: MainViewModel) {
             Text("- ${alerts.size}", color = MaterialTheme.colorScheme.secondary, fontSize = 14.sp)
         }
 
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(alerts) { alert ->
-                AlertItem(alert)
+        if (alerts.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("No hay alertas activas", color = MaterialTheme.colorScheme.secondary)
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(alerts) { alert ->
+                    AlertItem(alert)
+                }
             }
         }
     }
@@ -46,10 +84,10 @@ fun AlertsScreen(viewModel: MainViewModel) {
 
 @Composable
 fun AlertItem(alert: AlertResponse) {
-    val color = when (alert.severity.lowercase()) {
-        "critical" -> Color(0xFFF04438)
-        "warning" -> Color(0xFFF79009)
-        "success" -> Color(0xFF12B76A)
+    val color = when (alert.severity.uppercase()) {
+        "HIGH", "CRITICAL" -> Color(0xFFF04438)
+        "MEDIUM", "WARNING" -> Color(0xFFF79009)
+        "LOW", "SUCCESS" -> Color(0xFF12B76A)
         else -> MaterialTheme.colorScheme.primary
     }
 
@@ -71,21 +109,26 @@ fun AlertItem(alert: AlertResponse) {
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(alert.title, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                    Text(alert.time, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary)
+                    Text("ID: ${alert.id}", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    Surface(
+                        color = color.copy(alpha = 0.1f),
+                        shape = RoundedCornerShape(4.dp)
+                    ) {
+                        Text(
+                            alert.severity,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = color,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    alert.description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.secondary,
-                    lineHeight = 18.sp
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    alert.metadata,
-                    style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 0.5.sp),
-                    color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f)
+                    alert.message,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    lineHeight = 20.sp
                 )
             }
         }

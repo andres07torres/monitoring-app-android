@@ -16,12 +16,36 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.inframonitor.viewmodel.MainViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.inframonitor.data.models.SystemStatsResponse
+import com.example.inframonitor.ui.UiState
+import com.example.inframonitor.viewmodel.DashboardViewModel
 
 @Composable
-fun DashboardScreen(viewModel: MainViewModel) {
-    val stats by viewModel.systemStats.collectAsState()
+fun DashboardScreen(viewModel: DashboardViewModel = viewModel()) {
+    val uiState by viewModel.uiState.collectAsState()
 
+    Box(modifier = Modifier.fillMaxSize()) {
+        when (val state = uiState) {
+            is UiState.Loading -> {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            }
+            is UiState.Success -> {
+                DashboardContent(state.data)
+            }
+            is UiState.Error -> {
+                Text(
+                    text = state.message,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.align(Alignment.Center).padding(16.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun DashboardContent(stats: SystemStatsResponse) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
@@ -33,18 +57,18 @@ fun DashboardScreen(viewModel: MainViewModel) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 MetricCard(
                     "CPU", 
-                    (stats?.cpu_percent?.toFloat() ?: 0f) / 100f, 
-                    "${stats?.cpu_percent?.toInt() ?: 0}%", 
+                    (stats.cpu_percent.toFloat()) / 100f, 
+                    "${stats.cpu_percent.toInt()}%", 
                     "8 núcleos", 
                     "2.4 GHz prom.", 
                     MaterialTheme.colorScheme.primary
                 )
                 MetricCard(
                     "Memoria", 
-                    (stats?.ram_percent?.toFloat() ?: 0f) / 100f, 
-                    "${stats?.ram_percent?.toInt() ?: 0}%",
-                    "${stats?.ram_used_gb ?: 0.0} GB usados", 
-                    "${stats?.ram_total_gb ?: 0.0} GB total", 
+                    (stats.ram_percent.toFloat()) / 100f, 
+                    "${stats.ram_percent.toInt()}%", 
+                    "${stats.ram_used_gb} GB usados", 
+                    "${stats.ram_total_gb} GB total",
                     Color(0xFF12B76A)
                 )
                 MetricCard(
@@ -55,17 +79,6 @@ fun DashboardScreen(viewModel: MainViewModel) {
                     "500 GB total", 
                     Color(0xFFF79009)
                 )
-            }
-        }
-
-        item {
-            SectionHeader("Nodos del clúster")
-            Spacer(modifier = Modifier.height(12.dp))
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                NodeItem("rpi-node-01", "k3s agent", "48°C", "32%", true)
-                NodeItem("rpi-node-02", "k3s agent", "44°C", "18%", true)
-                NodeItem("rpi-node-03", "k3s agent", "71°C", "81%", false)
-                NodeItem("nuc-master", "control-plane", "39°C", "27%", true)
             }
         }
 

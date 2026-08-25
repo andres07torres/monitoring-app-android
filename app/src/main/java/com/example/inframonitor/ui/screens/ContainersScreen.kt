@@ -17,37 +17,52 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.inframonitor.data.models.ContainerResponse
-import com.example.inframonitor.viewmodel.MainViewModel
+import com.example.inframonitor.ui.UiState
+import com.example.inframonitor.viewmodel.ContainersViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ContainersScreen(viewModel: MainViewModel) {
-    val containers by viewModel.containers.collectAsState()
+fun ContainersScreen(viewModel: ContainersViewModel = viewModel()) {
+    val uiState by viewModel.uiState.collectAsState()
+    
+    Box(modifier = Modifier.fillMaxSize()) {
+        when (val state = uiState) {
+            is UiState.Loading -> {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            }
+            is UiState.Success -> {
+                ContainersContent(state.data, viewModel)
+            }
+            is UiState.Error -> {
+                Column(
+                    modifier = Modifier.align(Alignment.Center).padding(16.dp), 
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(text = state.message, color = MaterialTheme.colorScheme.error)
+                    Button(onClick = { viewModel.fetchContainers() }, modifier = Modifier.padding(top = 8.dp)) {
+                        Text("Reintentar")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ContainersContent(containers: List<ContainerResponse>, viewModel: ContainersViewModel) {
     var selectedFilter by remember { mutableStateOf("Todos") }
     val filters = listOf("Todos", "Activos", "Detenidos")
 
-    // Mock data if empty for visual validation
-    val displayContainers = if (containers.isEmpty()) {
-        listOf(
-            ContainerResponse("1", "nginx-proxy", "running"),
-            ContainerResponse("2", "postgres-db", "running"),
-            ContainerResponse("3", "plex-media", "restarting"),
-            ContainerResponse("4", "grafana", "exited"),
-            ContainerResponse("5", "watchtower", "exited")
-        )
-    } else {
-        containers
-    }
-
     val filteredContainers = when (selectedFilter) {
-        "Activos" -> displayContainers.filter { it.status == "running" }
-        "Detenidos" -> displayContainers.filter { it.status != "running" }
-        else -> displayContainers
+        "Activos" -> containers.filter { it.status == "running" }
+        "Detenidos" -> containers.filter { it.status != "running" }
+        else -> containers
     }
 
-    // Bottom Sheet Logic
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
     var showBottomSheet by remember { mutableStateOf(false) }
@@ -55,9 +70,7 @@ fun ContainersScreen(viewModel: MainViewModel) {
 
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
+            modifier = Modifier.padding(16.dp).fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text("Contenedores", fontWeight = FontWeight.Bold, fontSize = 14.sp)
@@ -66,9 +79,7 @@ fun ContainersScreen(viewModel: MainViewModel) {
         }
 
         Row(
-            modifier = Modifier
-                .padding(horizontal = 16.dp)
-                .fillMaxWidth(),
+            modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             filters.forEach { filter ->
@@ -93,8 +104,8 @@ fun ContainersScreen(viewModel: MainViewModel) {
             items(filteredContainers) { container ->
                 ContainerItem(
                     container = container,
-                    onToggle = { isChecked ->
-                        viewModel.toggleContainer(container.id, isChecked)
+                    onToggle = { 
+                        viewModel.toggleContainer(container.id, container.status)
                     },
                     onClick = {
                         selectedContainer = container
@@ -115,7 +126,7 @@ fun ContainersScreen(viewModel: MainViewModel) {
             ContainerActionsContent(
                 container = selectedContainer!!,
                 onAction = { action ->
-                    // Handle actions (start, stop, restart)
+                    viewModel.toggleContainer(selectedContainer!!.id, selectedContainer!!.status)
                     scope.launch { sheetState.hide() }.invokeOnCompletion {
                         if (!sheetState.isVisible) {
                             showBottomSheet = false
@@ -194,9 +205,7 @@ fun ContainerItem(
 @Composable
 fun ContainerActionsContent(container: ContainerResponse, onAction: (String) -> Unit) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 32.dp, start = 16.dp, end = 16.dp)
+        modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp, start = 16.dp, end = 16.dp)
     ) {
         Text(
             text = "Acciones para ${container.name}",
