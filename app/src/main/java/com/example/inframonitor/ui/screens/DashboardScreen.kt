@@ -23,11 +23,7 @@ import com.example.inframonitor.ui.UiState
 import com.example.inframonitor.viewmodel.DashboardData
 import com.example.inframonitor.viewmodel.DashboardViewModel
 import com.example.inframonitor.ui.theme.*
-import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
-import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
-import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
-import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
-import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
+import java.util.Locale
 
 @Composable
 fun DashboardScreen(viewModel: DashboardViewModel = viewModel()) {
@@ -50,7 +46,8 @@ fun DashboardScreen(viewModel: DashboardViewModel = viewModel()) {
                     Button(
                         onClick = { viewModel.refresh() }, 
                         modifier = Modifier.padding(top = 8.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Primary)
+                        colors = ButtonDefaults.buttonColors(containerColor = Primary),
+                        shape = RoundedCornerShape(12.dp)
                     ) {
                         Text("Reintentar")
                     }
@@ -65,79 +62,46 @@ fun DashboardContent(data: DashboardData, onRefresh: () -> Unit) {
     val stats = data.stats
     val containers = data.containers
     val activeContainers = containers.filter { it.status == "running" }
-    
-    val modelProducer = remember { CartesianChartModelProducer() }
-    
-    LaunchedEffect(data.history) {
-        if (data.history.isNotEmpty()) {
-            modelProducer.runTransaction {
-                lineSeries {
-                    series(data.history.map { it.cpu })
-                    series(data.history.map { it.ram })
-                }
-            }
-        }
-    }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(24.dp),
+        contentPadding = PaddingValues(bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
         item {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier.padding(top = 24.dp, start = 24.dp, end = 24.dp).fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                SectionHeader("Recursos del host")
-                IconButton(
-                    onClick = onRefresh,
-                    modifier = Modifier.background(Surface, CircleShape).size(36.dp)
-                ) {
-                    Icon(Icons.Default.Refresh, contentDescription = "Actualizar", tint = Primary, modifier = Modifier.size(18.dp))
+                Column {
+                    Text(
+                        "Panel de Control",
+                        style = MaterialTheme.typography.headlineSmall.copy(
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = (-0.5).sp,
+                            color = TextPrimary
+                        )
+                    )
+                    Text(
+                        "Métricas críticas del sistema en tiempo real", 
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextSecondary
+                    )
                 }
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                MetricCard(
-                    "CPU", 
-                    (stats.cpu_percent.toFloat()) / 100f, 
-                    "${stats.cpu_percent.toInt()}%", 
-                    "8 núcleos", 
-                    "2.4 GHz prom.", 
-                    Primary
-                )
-                MetricCard(
-                    "Memoria", 
-                    (stats.ram_percent.toFloat()) / 100f, 
-                    "${stats.ram_percent.toInt()}%", 
-                    "${stats.ram_used_gb} GB usados", 
-                    "${stats.ram_total_gb} GB total",
-                    Success
-                )
-            }
-        }
-
-        item {
-            SectionHeader("Histórico de Rendimiento")
-            Spacer(modifier = Modifier.height(12.dp))
-            Card(
-                modifier = Modifier.fillMaxWidth().height(200.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Surface),
-                border = CardDefaults.outlinedCardBorder()
-            ) {
-                Box(modifier = Modifier.padding(16.dp)) {
-                    if (data.history.isEmpty()) {
-                        Text("No hay datos históricos disponibles", modifier = Modifier.align(Alignment.Center), color = TextMuted)
-                    } else {
-                        CartesianChartHost(
-                            chart = rememberCartesianChart(
-                                rememberLineCartesianLayer()
-                            ),
-                            modelProducer = modelProducer,
-                            modifier = Modifier.fillMaxSize()
+                Surface(
+                    onClick = onRefresh,
+                    shape = CircleShape,
+                    color = Surface,
+                    tonalElevation = 2.dp,
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            Icons.Default.Refresh, 
+                            contentDescription = "Actualizar", 
+                            tint = Primary, 
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                 }
@@ -145,23 +109,55 @@ fun DashboardContent(data: DashboardData, onRefresh: () -> Unit) {
         }
 
         item {
-            SectionHeader("Servicios Activos")
-            Spacer(modifier = Modifier.height(12.dp))
-            if (activeContainers.isEmpty()) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Surface),
-                    border = CardDefaults.outlinedCardBorder()
-                ) {
-                    Box(modifier = Modifier.padding(32.dp).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        Text("No hay servicios activos", color = TextMuted)
+            Column(modifier = Modifier.padding(horizontal = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                SectionHeader("Recursos del host")
+                MetricCard(
+                    title = "CPU", 
+                    progress = (stats.cpu_percent.toFloat()) / 100f, 
+                    percentage = "${stats.cpu_percent.toInt()}%", 
+                    subLeft = "${stats.cpu_cores ?: 0} núcleos", 
+                    subRight = String.format(Locale.getDefault(), "%.1f GHz prom.", stats.cpu_frequency ?: 0.0), 
+                    progressColor = Primary
+                )
+                MetricCard(
+                    title = "Memoria", 
+                    progress = (stats.ram_percent.toFloat()) / 100f, 
+                    percentage = "${stats.ram_percent.toInt()}%", 
+                    subLeft = "${stats.ram_used_gb} GB usados", 
+                    subRight = "${stats.ram_total_gb} GB total",
+                    progressColor = Success
+                )
+                MetricCard(
+                    title = "Almacenamiento", 
+                    progress = (stats.disk_percent?.toFloat() ?: 0f) / 100f, 
+                    percentage = "${stats.disk_percent?.toInt() ?: 0}%", 
+                    subLeft = "${stats.disk_used_gb ?: 0.0} GB usados", 
+                    subRight = "${stats.disk_total_gb ?: 0.0} GB total",
+                    progressColor = Warning
+                )
+            }
+        }
+
+        item {
+            Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+                SectionHeader("Servicios Activos")
+                Spacer(modifier = Modifier.height(12.dp))
+                if (activeContainers.isEmpty()) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Surface),
+                        border = CardDefaults.outlinedCardBorder()
+                    ) {
+                        Box(modifier = Modifier.padding(32.dp).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            Text("No hay servicios activos", color = TextMuted)
+                        }
                     }
-                }
-            } else {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    activeContainers.forEach { container ->
-                        ActiveServiceItem(container)
+                } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        activeContainers.forEach { container ->
+                            ActiveServiceItem(container)
+                        }
                     }
                 }
             }
@@ -177,7 +173,8 @@ fun SectionHeader(title: String) {
             fontWeight = FontWeight.ExtraBold,
             color = TextPrimary,
             letterSpacing = (-0.5).sp
-        )
+        ),
+        modifier = Modifier.padding(bottom = 4.dp)
     )
 }
 
@@ -253,10 +250,11 @@ fun ActiveServiceItem(container: ContainerResponse) {
             }
             Text(
                 "ACTIVO",
-                fontWeight = FontWeight.ExtraBold, 
-                fontSize = 11.sp, 
-                color = Success,
-                letterSpacing = 1.sp
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontWeight = FontWeight.ExtraBold, 
+                    color = Success,
+                    letterSpacing = 1.sp
+                )
             )
         }
     }

@@ -15,7 +15,14 @@ import kotlinx.coroutines.launch
 class MainViewModel : ViewModel() {
 
     private val _systemStats = MutableStateFlow<SystemStatsResponse?>(
-        SystemStatsResponse(0.0, 0.0, 0.0, 0.0)
+        SystemStatsResponse(
+            cpu_percent = 0.0,
+            cpu_cores = 0,
+            cpu_frequency = 0.0,
+            ram_percent = 0.0,
+            ram_used_gb = 0.0,
+            ram_total_gb = 0.0
+        )
     )
     val systemStats: StateFlow<SystemStatsResponse?> = _systemStats.asStateFlow()
 

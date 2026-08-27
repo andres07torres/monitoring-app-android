@@ -6,12 +6,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.inframonitor.ui.theme.*
@@ -20,6 +23,7 @@ import com.example.inframonitor.ui.theme.*
 fun ConnectionScreen(onConfigSaved: (String, String) -> Unit) {
     var urlInput by remember { mutableStateOf("") }
     var apiKeyInput by remember { mutableStateOf("") }
+    var passwordVisible by remember { mutableStateOf(false) }
     
     Box(
         modifier = Modifier
@@ -82,8 +86,14 @@ fun ConnectionScreen(onConfigSaved: (String, String) -> Unit) {
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("API Key / Token JWT") },
                     leadingIcon = { Icon(Icons.Default.Key, contentDescription = null, tint = Primary) },
+                    trailingIcon = {
+                        val image = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
+                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            Icon(imageVector = image, contentDescription = null, tint = Primary)
+                        }
+                    },
                     singleLine = true,
-                    visualTransformation = PasswordVisualTransformation(),
+                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Primary,

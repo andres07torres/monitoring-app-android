@@ -1,14 +1,15 @@
 package com.example.inframonitor.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,6 +20,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.inframonitor.data.models.ContainerResponse
+import com.example.inframonitor.ui.UiState
 import com.example.inframonitor.ui.theme.*
 import com.example.inframonitor.viewmodel.DiagnosticsViewModel
 
@@ -28,6 +31,7 @@ fun DiagnosticsScreen(viewModel: DiagnosticsViewModel = viewModel()) {
     val output by viewModel.commandOutput.collectAsState()
     val isExecuting by viewModel.isExecuting.collectAsState()
     val healthStatus by viewModel.healthStatus.collectAsState()
+    val containersState by viewModel.containersState.collectAsState()
 
     Column(
         modifier = Modifier
@@ -35,18 +39,45 @@ fun DiagnosticsScreen(viewModel: DiagnosticsViewModel = viewModel()) {
             .padding(24.dp)
             .verticalScroll(rememberScrollState())
     ) {
-        Text(
-            "Diagnóstico y Salud",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.ExtraBold,
-            color = TextPrimary
-        )
-        Text(
-            "Monitoreo de endpoints y ejecución de comandos",
-            style = MaterialTheme.typography.bodyMedium,
-            color = TextSecondary,
-            modifier = Modifier.padding(bottom = 24.dp)
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    "Diagnóstico y Salud",
+                    style = MaterialTheme.typography.headlineSmall.copy(
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = (-0.5).sp,
+                        color = TextPrimary
+                    )
+                )
+                Text(
+                    "Herramientas de red y terminal de comandos",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary
+                )
+            }
+            Surface(
+                onClick = { viewModel.fetchContainers() },
+                shape = CircleShape,
+                color = Surface,
+                tonalElevation = 2.dp,
+                modifier = Modifier.size(40.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        Icons.Default.Refresh, 
+                        contentDescription = "Actualizar", 
+                        tint = Primary, 
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
 
         // Health Checks Section
         Text(
@@ -57,8 +88,25 @@ fun DiagnosticsScreen(viewModel: DiagnosticsViewModel = viewModel()) {
             modifier = Modifier.padding(bottom = 8.dp)
         )
         
-        HealthItem("API Gateway", "https://api.example.com/health", healthStatus, viewModel)
-        HealthItem("Auth Service", "https://auth.example.com/check", healthStatus, viewModel)
+        when (val state = containersState) {
+            is UiState.Loading -> {
+                Box(modifier = Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                }
+            }
+            is UiState.Success -> {
+                if (state.data.isEmpty()) {
+                    Text("No hay contenedores activos para monitorear.", color = TextMuted, modifier = Modifier.padding(vertical = 16.dp))
+                } else {
+                    state.data.forEach { container ->
+                        HealthItem(container, healthStatus, viewModel)
+                    }
+                }
+            }
+            is UiState.Error -> {
+                Text("Error al cargar servicios: ${state.message}", color = Error, modifier = Modifier.padding(vertical = 16.dp))
+            }
+        }
         
         Spacer(modifier = Modifier.height(32.dp))
 
@@ -97,13 +145,13 @@ fun DiagnosticsScreen(viewModel: DiagnosticsViewModel = viewModel()) {
                 .fillMaxWidth()
                 .heightIn(min = 150.dp, max = 400.dp),
             shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.Black),
+            colors = CardDefaults.cardColors(containerColor = Surface),
             border = androidx.compose.foundation.BorderStroke(1.dp, Outline)
         ) {
             Box(modifier = Modifier.padding(16.dp).verticalScroll(rememberScrollState())) {
                 Text(
                     text = if (output.isEmpty()) "$ > _" else "$ $command\n\n$output",
-                    color = Color.Green,
+                    color = Primary,
                     fontFamily = FontFamily.Monospace,
                     fontSize = 12.sp
                 )
@@ -113,8 +161,8 @@ fun DiagnosticsScreen(viewModel: DiagnosticsViewModel = viewModel()) {
 }
 
 @Composable
-fun HealthItem(name: String, url: String, statusMap: Map<String, String>, viewModel: DiagnosticsViewModel) {
-    val status = statusMap[url] ?: "Pendiente"
+fun HealthItem(container: ContainerResponse, statusMap: Map<String, String>, viewModel: DiagnosticsViewModel) {
+    val status = statusMap[container.id] ?: "Pendiente"
     val isOk = status.contains("OK")
 
     Surface(
@@ -135,16 +183,16 @@ fun HealthItem(name: String, url: String, statusMap: Map<String, String>, viewMo
             )
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(name, fontWeight = FontWeight.Bold, color = TextPrimary)
-                Text(url, fontSize = 10.sp, color = TextSecondary)
+                Text(container.name, fontWeight = FontWeight.Bold, color = TextPrimary)
+                Text("ID: ${container.id.take(12)}", fontSize = 10.sp, color = TextSecondary)
             }
             Text(
                 status,
                 style = MaterialTheme.typography.labelSmall,
-                color = if (isOk) Success else Error,
+                color = if (isOk) Success else (if (status == "Pendiente") TextSecondary else Error),
                 fontWeight = FontWeight.Bold
             )
-            IconButton(onClick = { viewModel.checkHealth(url) }) {
+            IconButton(onClick = { viewModel.checkHealth(container.id, container.name) }) {
                 Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Check", modifier = Modifier.size(16.dp), tint = Primary)
             }
         }

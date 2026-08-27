@@ -16,6 +16,8 @@ data class HistoryPoint(
 
 data class SystemStatsResponse(
     val cpu_percent: Double,
+    val cpu_cores: Int? = null,
+    val cpu_frequency: Double? = null,
     val ram_percent: Double,
     val ram_used_gb: Double,
     val ram_total_gb: Double,

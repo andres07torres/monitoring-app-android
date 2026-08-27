@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.example.inframonitor.data.models.ContainerResponse
 import com.example.inframonitor.data.network.RetrofitClient
 import com.example.inframonitor.ui.UiState
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,6 +21,7 @@ class ContainersViewModel : ViewModel() {
 
     fun fetchContainers() {
         viewModelScope.launch {
+            _uiState.value = UiState.Loading
             try {
                 val response = RetrofitClient.instance.getContainers()
                 if (response.isSuccessful && response.body() != null) {
@@ -100,18 +100,8 @@ class ContainersViewModel : ViewModel() {
     fun pruneContainers() {
         viewModelScope.launch {
             try {
-                RetrofitClient.instance.pruneContainers()
+                RetrofitClient.instance.pruneSystem()
                 fetchContainers()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-    }
-
-    fun pruneImages() {
-        viewModelScope.launch {
-            try {
-                RetrofitClient.instance.pruneImages()
             } catch (e: Exception) {
                 e.printStackTrace()
             }

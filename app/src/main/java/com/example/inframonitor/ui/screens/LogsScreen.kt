@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,6 +23,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.inframonitor.ui.UiState
 import com.example.inframonitor.viewmodel.ContainersViewModel
 import com.example.inframonitor.viewmodel.LogsViewModel
+import com.example.inframonitor.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,11 +36,46 @@ fun LogsScreen(
     
     var selectedContainerId by remember { mutableStateOf<String?>(null) }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text("Registros en tiempo real", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-            Spacer(modifier = Modifier.height(12.dp))
-            
+    Column(modifier = Modifier.fillMaxSize().background(Background)) {
+        Row(
+            modifier = Modifier.padding(24.dp).fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column {
+                Text(
+                    "Registros de Docker",
+                    style = MaterialTheme.typography.headlineSmall.copy(
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = (-0.5).sp,
+                        color = TextPrimary
+                    )
+                )
+                Text(
+                    "Monitorización de eventos en tiempo real",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary
+                )
+            }
+            Surface(
+                onClick = { selectedContainerId?.let { logsViewModel.fetchLogs(it) } },
+                shape = CircleShape,
+                color = Surface,
+                tonalElevation = 2.dp,
+                modifier = Modifier.size(40.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        Icons.Default.Refresh, 
+                        contentDescription = "Actualizar", 
+                        tint = Primary, 
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+        }
+
+        Column(modifier = Modifier.padding(horizontal = 24.dp)) {
             if (containersState is UiState.Success) {
                 val containers = (containersState as UiState.Success).data
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -49,47 +86,71 @@ fun LogsScreen(
                                 selectedContainerId = container.id
                                 logsViewModel.fetchLogs(container.id)
                             },
-                            label = { Text(container.name) }
+                            label = { Text(container.name) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = Primary,
+                                selectedLabelColor = Surface,
+                                containerColor = Surface,
+                                labelColor = TextPrimary
+                            ),
+                            border = FilterChipDefaults.filterChipBorder(
+                                selectedBorderColor = Primary,
+                                borderColor = Outline,
+                                borderWidth = 1.dp,
+                                enabled = true,
+                                selected = selectedContainerId == container.id
+                            )
                         )
                     }
                 }
             }
             
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(modifier = Modifier.size(6.dp).background(Color(0xFFF04438), CircleShape))
+                Box(modifier = Modifier.size(6.dp).background(Error, CircleShape))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Transmisión en vivo", color = Color(0xFFF04438), fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                Text("Transmisión en vivo", color = Error, fontSize = 12.sp, fontWeight = FontWeight.Bold)
             }
         }
 
+        Spacer(modifier = Modifier.height(16.dp))
+
         Box(modifier = Modifier.fillMaxSize()) {
             if (selectedContainerId == null) {
-                Text(
-                    "Selecciona un contenedor para ver sus registros", 
+                Column(
                     modifier = Modifier.align(Alignment.Center),
-                    color = MaterialTheme.colorScheme.secondary
-                )
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        "Selecciona un contenedor para ver sus registros", 
+                        color = TextMuted,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
             } else {
                 when (val state = logsState) {
                     is UiState.Loading -> {
-                        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = Primary)
                     }
                     is UiState.Success -> {
                         if (state.data.isEmpty()) {
-                            Text("No hay registros para mostrar", modifier = Modifier.align(Alignment.Center), color = MaterialTheme.colorScheme.secondary)
+                            Text("No hay registros disponibles", modifier = Modifier.align(Alignment.Center), color = TextMuted)
                         } else {
                             LogsList(state.data)
                         }
                     }
                     is UiState.Error -> {
                         Column(
-                            modifier = Modifier.align(Alignment.Center).padding(16.dp),
+                            modifier = Modifier.align(Alignment.Center).padding(24.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Text(text = state.message, color = MaterialTheme.colorScheme.error)
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Button(onClick = { logsViewModel.fetchLogs(selectedContainerId!!) }) {
+                            Text(text = state.message, color = Error)
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(
+                                onClick = { logsViewModel.fetchLogs(selectedContainerId!!) },
+                                colors = ButtonDefaults.buttonColors(containerColor = Primary),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
                                 Text("Reintentar")
                             }
                         }
@@ -104,7 +165,6 @@ fun LogsScreen(
 fun LogsList(logs: List<String>) {
     val listState = rememberLazyListState()
 
-    // Auto-scroll al final cuando llegan nuevos logs
     LaunchedEffect(logs.size) {
         if (logs.isNotEmpty()) {
             listState.animateScrollToItem(logs.size - 1)
@@ -113,12 +173,13 @@ fun LogsList(logs: List<String>) {
 
     Card(
         modifier = Modifier
-            .padding(horizontal = 16.dp)
-            .padding(bottom = 16.dp)
+            .padding(horizontal = 24.dp)
+            .padding(bottom = 24.dp)
             .fillMaxSize(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = CardDefaults.outlinedCardBorder()
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Outline),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         LazyColumn(
             state = listState,
@@ -130,7 +191,8 @@ fun LogsList(logs: List<String>) {
                     text = log,
                     style = MaterialTheme.typography.bodySmall.copy(
                         fontFamily = FontFamily.Monospace,
-                        lineHeight = 16.sp
+                        lineHeight = 16.sp,
+                        color = TextPrimary
                     ),
                     modifier = Modifier.fillMaxWidth()
                 )

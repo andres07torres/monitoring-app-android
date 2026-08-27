@@ -1,10 +1,14 @@
 package com.example.inframonitor.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -19,18 +23,19 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.inframonitor.data.models.AlertResponse
 import com.example.inframonitor.ui.UiState
 import com.example.inframonitor.viewmodel.AlertsViewModel
+import com.example.inframonitor.ui.theme.*
 
 @Composable
 fun AlertsScreen(viewModel: AlertsViewModel = viewModel()) {
     val uiState by viewModel.uiState.collectAsState()
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize().background(Background)) {
         when (val state = uiState) {
             is UiState.Loading -> {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = Primary)
             }
             is UiState.Success -> {
-                AlertsContent(state.data)
+                AlertsContent(state.data, onRefresh = { viewModel.fetchAlerts() })
             }
             is UiState.Error -> {
                 Column(
@@ -39,11 +44,15 @@ fun AlertsScreen(viewModel: AlertsViewModel = viewModel()) {
                 ) {
                     Text(
                         text = state.message,
-                        color = MaterialTheme.colorScheme.error,
+                        color = Error,
                         style = MaterialTheme.typography.bodyLarge
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Button(onClick = { viewModel.fetchAlerts() }) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(
+                        onClick = { viewModel.fetchAlerts() },
+                        colors = ButtonDefaults.buttonColors(containerColor = Primary),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
                         Text("Reintentar")
                     }
                 }
@@ -53,26 +62,55 @@ fun AlertsScreen(viewModel: AlertsViewModel = viewModel()) {
 }
 
 @Composable
-fun AlertsContent(alerts: List<AlertResponse>) {
+fun AlertsContent(alerts: List<AlertResponse>, onRefresh: () -> Unit) {
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
-            modifier = Modifier.padding(16.dp).fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.padding(24.dp).fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text("Alertas", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-            Spacer(modifier = Modifier.width(4.dp))
-            Text("- ${alerts.size}", color = MaterialTheme.colorScheme.secondary, fontSize = 14.sp)
+            Column {
+                Text(
+                    "Alertas del Sistema",
+                    style = MaterialTheme.typography.headlineSmall.copy(
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = (-0.5).sp,
+                        color = TextPrimary
+                    )
+                )
+                Text(
+                    "Historial de incidentes y umbrales críticos",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary
+                )
+            }
+            Surface(
+                onClick = onRefresh,
+                shape = CircleShape,
+                color = Surface,
+                tonalElevation = 2.dp,
+                modifier = Modifier.size(40.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        Icons.Default.Refresh, 
+                        contentDescription = "Actualizar", 
+                        tint = Primary, 
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
         }
 
         if (alerts.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("No hay alertas activas", color = MaterialTheme.colorScheme.secondary)
+                Text("No hay alertas activas", color = TextMuted)
             }
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 items(alerts) { alert ->
                     AlertItem(alert)
@@ -85,34 +123,42 @@ fun AlertsContent(alerts: List<AlertResponse>) {
 @Composable
 fun AlertItem(alert: AlertResponse) {
     val color = when (alert.severity.uppercase()) {
-        "HIGH", "CRITICAL" -> Color(0xFFF04438)
-        "MEDIUM", "WARNING" -> Color(0xFFF79009)
-        "LOW", "SUCCESS" -> Color(0xFF12B76A)
-        else -> MaterialTheme.colorScheme.primary
+        "HIGH", "CRITICAL" -> Error
+        "MEDIUM", "WARNING" -> Warning
+        "LOW", "SUCCESS" -> Success
+        else -> Primary
     }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = CardDefaults.outlinedCardBorder()
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Surface),
+        border = BorderStroke(1.dp, Outline),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(modifier = Modifier.height(IntrinsicSize.Min)) {
             Box(
                 modifier = Modifier
-                    .width(4.dp)
+                    .width(6.dp)
                     .fillMaxHeight()
                     .background(color)
             )
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column(modifier = Modifier.padding(20.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("ID: ${alert.id}", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    Text(
+                        "ID: ${alert.id}", 
+                        fontWeight = FontWeight.Bold, 
+                        fontSize = 14.sp,
+                        color = TextPrimary
+                    )
                     Surface(
                         color = color.copy(alpha = 0.1f),
-                        shape = RoundedCornerShape(4.dp)
+                        shape = RoundedCornerShape(6.dp),
+                        border = BorderStroke(1.dp, color.copy(alpha = 0.2f))
                     ) {
                         val severityText = when(alert.severity.uppercase()) {
                             "HIGH", "CRITICAL" -> "CRÍTICA"
@@ -122,26 +168,27 @@ fun AlertItem(alert: AlertResponse) {
                         }
                         Text(
                             severityText,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                             style = MaterialTheme.typography.labelSmall,
                             color = color,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.ExtraBold
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 Text(
                     alert.message,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = TextPrimary,
                     lineHeight = 20.sp
                 )
                 if (alert.timestamp != null) {
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         alert.timestamp,
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.secondary
+                        color = TextMuted,
+                        fontWeight = FontWeight.Medium
                     )
                 }
             }

@@ -110,19 +110,20 @@ fun ContainersContent(containers: List<ContainerResponse>, viewModel: Containers
                     color = TextSecondary
                 )
             }
-            Row {
-                IconButton(
-                    onClick = { viewModel.pruneContainers() },
-                    modifier = Modifier.background(Surface, CircleShape).size(40.dp)
-                ) {
-                    Icon(Icons.Default.DeleteSweep, contentDescription = "Poda", tint = Error, modifier = Modifier.size(20.dp))
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                IconButton(
-                    onClick = { viewModel.fetchContainers() },
-                    modifier = Modifier.background(Surface, CircleShape).size(40.dp)
-                ) {
-                    Icon(Icons.Default.Refresh, contentDescription = "Actualizar", tint = Primary, modifier = Modifier.size(20.dp))
+            Surface(
+                onClick = { viewModel.fetchContainers() },
+                shape = CircleShape,
+                color = Surface,
+                tonalElevation = 2.dp,
+                modifier = Modifier.size(40.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        Icons.Default.Refresh, 
+                        contentDescription = "Actualizar", 
+                        tint = Primary, 
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
             }
         }

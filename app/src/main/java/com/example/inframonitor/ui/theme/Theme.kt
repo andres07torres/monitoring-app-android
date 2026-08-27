@@ -31,7 +31,7 @@ private val LightColorScheme = lightColorScheme(
 @Composable
 fun InfraMonitorTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Desactivamos dynamicColor para mantener la identidad visual de "Infra Control"
+    // Desactivamos dynamicColor para mantener la identidad visual de "InfraMonitor"
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {

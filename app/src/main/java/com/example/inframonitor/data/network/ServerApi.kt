@@ -12,9 +12,6 @@ interface ServerApi {
     @GET("api/v1/system/stats")
     suspend fun getSystemStats(): Response<SystemStatsResponse>
 
-    @GET("api/v1/system/history")
-    suspend fun getSystemHistory(): Response<List<HistoryPoint>>
-
     @GET("api/v1/containers")
     suspend fun getContainers(): Response<List<ContainerResponse>>
 
@@ -36,20 +33,17 @@ interface ServerApi {
     @DELETE("api/v1/containers/{container_id}")
     suspend fun removeContainer(@Path("container_id") id: String): Response<Unit>
 
-    @POST("api/v1/containers/prune")
-    suspend fun pruneContainers(): Response<Unit>
-
-    @POST("api/v1/images/prune")
-    suspend fun pruneImages(): Response<Unit>
+    @POST("api/v1/system/prune")
+    suspend fun pruneSystem(): Response<Unit>
 
     @GET("api/v1/containers/{container_id}/logs")
-    suspend fun getLogs(@Path("container_id") containerId: String): Response<ContainerLogsResponse>
+    suspend fun getLogs(@Path("container_id") containerId: String, @Query("tail") tail: Int = 100): Response<ContainerLogsResponse>
 
     @GET("api/v1/alerts")
     suspend fun getAlerts(): List<AlertResponse>
 
-    @GET("api/v1/containers/{container_id}/stats/history")
-    suspend fun getContainerHistory(@Path("container_id") id: String): Response<List<HistoryPoint>>
+    @GET("api/v1/logs")
+    suspend fun getGlobalLogs(): List<LogResponse>
 
     // Healthchecks
     @GET("api/v1/healthcheck")
@@ -63,3 +57,4 @@ interface ServerApi {
 data class HealthCheckResponse(val status: Int, val message: String)
 data class CommandRequest(val command: String)
 data class CommandResponse(val output: String, val exitCode: Int)
+data class LogResponse(val id: String, val timestamp: String, val level: String, val message: String)

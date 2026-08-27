@@ -3,10 +3,10 @@ package com.example.inframonitor.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.inframonitor.data.models.ContainerResponse
-import com.example.inframonitor.data.models.HistoryPoint
 import com.example.inframonitor.data.models.SystemStatsResponse
 import com.example.inframonitor.data.network.RetrofitClient
 import com.example.inframonitor.ui.UiState
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,8 +15,7 @@ import kotlinx.coroutines.launch
 
 data class DashboardData(
     val stats: SystemStatsResponse,
-    val containers: List<ContainerResponse>,
-    val history: List<HistoryPoint> = emptyList()
+    val containers: List<ContainerResponse>
 )
 
 class DashboardViewModel : ViewModel() {
@@ -32,7 +31,7 @@ class DashboardViewModel : ViewModel() {
         viewModelScope.launch {
             while (true) {
                 fetchDashboardData()
-                delay(5000)
+                delay(10000)
             }
         }
     }
@@ -46,26 +45,22 @@ class DashboardViewModel : ViewModel() {
 
     private suspend fun fetchDashboardData() {
         try {
-            val statsResponse = RetrofitClient.instance.getSystemStats()
-            val containersResponse = RetrofitClient.instance.getContainers()
-            val historyResponse = try { 
-                RetrofitClient.instance.getSystemHistory() 
-            } catch (e: Exception) { 
-                e.printStackTrace()
-                null 
-            }
+            val statsDeferred = viewModelScope.async { RetrofitClient.instance.getSystemStats() }
+            val containersDeferred = viewModelScope.async { RetrofitClient.instance.getContainers() }
 
-            if (statsResponse.isSuccessful && containersResponse.isSuccessful) {
-                val stats = statsResponse.body()
-                val containers = containersResponse.body()
-                val history = historyResponse?.body() ?: emptyList<HistoryPoint>()
+            val statsRes = statsDeferred.await()
+            val containersRes = containersDeferred.await()
+
+            if (statsRes.isSuccessful && containersRes.isSuccessful) {
+                val stats = statsRes.body()
+                val containers = containersRes.body()
                 
                 if (stats != null && containers != null) {
-                    _uiState.value = UiState.Success(DashboardData(stats, containers, history))
+                    _uiState.value = UiState.Success(DashboardData(stats, containers))
                 }
             } else {
                 if (_uiState.value !is UiState.Success) {
-                    _uiState.value = UiState.Error("Error al sincronizar con el servidor")
+                    _uiState.value = UiState.Error("Fallo en la comunicación con el servidor")
                 }
             }
         } catch (e: Exception) {

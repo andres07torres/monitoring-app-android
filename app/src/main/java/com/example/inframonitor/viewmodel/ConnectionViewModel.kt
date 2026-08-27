@@ -34,11 +34,14 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
 
     fun saveConfig(url: String, apiKey: String) {
         viewModelScope.launch {
-            settingsManager.saveServerUrl(url)
-            settingsManager.saveApiKey(apiKey)
+            val cleanUrl = url.trim()
+            val cleanApiKey = apiKey.trim()
             
-            RetrofitClient.updateBaseUrl(url)
-            RetrofitClient.updateApiKey(apiKey)
+            settingsManager.saveServerUrl(cleanUrl)
+            settingsManager.saveApiKey(cleanApiKey)
+            
+            RetrofitClient.updateBaseUrl(cleanUrl)
+            RetrofitClient.updateApiKey(cleanApiKey)
             
             _isConfigured.value = true
         }

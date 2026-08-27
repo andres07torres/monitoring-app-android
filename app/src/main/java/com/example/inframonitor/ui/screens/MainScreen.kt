@@ -11,10 +11,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import com.example.inframonitor.R
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -35,20 +38,16 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
 
 @Composable
 fun AppLogo(size: Int = 32, iconSize: Int = 20) {
-    val gradient = Brush.linearGradient(
-        colors = listOf(Primary, Accent)
-    )
     Box(
         modifier = Modifier
             .size(size.dp)
-            .background(gradient, RoundedCornerShape(8.dp)),
+            .clip(RoundedCornerShape(8.dp)),
         contentAlignment = Alignment.Center
     ) {
-        Icon(
-            Icons.Default.Storage, 
-            contentDescription = null, 
-            tint = Color.White,
-            modifier = Modifier.size(iconSize.dp)
+        androidx.compose.foundation.Image(
+            painter = painterResource(id = R.drawable.logo_orquestador),
+            contentDescription = "Logo Orquestador",
+            modifier = Modifier.fillMaxSize()
         )
     }
 }
@@ -127,7 +126,7 @@ fun MainScreen(onLogout: () -> Unit = {}) {
                     },
                     title = {
                         Text(
-                            "Infra Control",
+                            "InfraMonitor",
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 20.sp,

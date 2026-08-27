@@ -35,8 +35,9 @@ object RetrofitClient {
         val requestBuilder = original.newBuilder()
         
         currentApiKey?.let {
+            // Enviamos ambos formatos para asegurar compatibilidad
             requestBuilder.header("X-API-Key", it)
-            // O si es JWT: requestBuilder.header("Authorization", "Bearer $it")
+            requestBuilder.header("Authorization", "Bearer $it")
         }
         
         chain.proceed(requestBuilder.build())
