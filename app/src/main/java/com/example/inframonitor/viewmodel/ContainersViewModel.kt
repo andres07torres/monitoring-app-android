@@ -62,7 +62,7 @@ class ContainersViewModel : ViewModel() {
                     fetchContainers()
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                // Silently fail or log to a production crashlytics
             }
         }
     }
@@ -79,7 +79,7 @@ class ContainersViewModel : ViewModel() {
                     fetchContainers()
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                // Silently fail or log to a production crashlytics
             }
         }
     }
@@ -92,7 +92,7 @@ class ContainersViewModel : ViewModel() {
                     fetchContainers()
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                // Silently fail or log to a production crashlytics
             }
         }
     }
@@ -103,7 +103,7 @@ class ContainersViewModel : ViewModel() {
                 RetrofitClient.instance.pruneSystem()
                 fetchContainers()
             } catch (e: Exception) {
-                e.printStackTrace()
+                // Silently fail or log to a production crashlytics
             }
         }
     }

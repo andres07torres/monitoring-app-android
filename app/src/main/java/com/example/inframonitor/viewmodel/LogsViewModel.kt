@@ -25,7 +25,6 @@ class LogsViewModel : ViewModel() {
                     _uiState.value = UiState.Error("No se encontraron logs")
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
                 _uiState.value = UiState.Error(e.message ?: "Error desconocido")
             }
         }

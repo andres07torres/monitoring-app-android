@@ -37,7 +37,6 @@ class AlertsViewModel : ViewModel() {
                 val response = RetrofitClient.instance.getAlerts()
                 _uiState.value = UiState.Success(response)
             } catch (e: Exception) {
-                e.printStackTrace()
                 _uiState.value = UiState.Error("Error al obtener alertas: ${e.localizedMessage}")
             }
         }

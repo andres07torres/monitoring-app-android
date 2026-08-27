@@ -10,6 +10,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.work.Constraints
 import androidx.work.NetworkType
@@ -32,7 +33,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             InfraMonitorTheme {
                 val connectionViewModel: ConnectionViewModel = viewModel()
-                val isConfigured by connectionViewModel.isConfigured.collectAsState()
+                val isConfigured by connectionViewModel.isConfigured.collectAsStateWithLifecycle()
 
                 when (isConfigured) {
                     null -> {
