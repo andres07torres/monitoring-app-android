@@ -1,11 +1,11 @@
 # 📱 InfraMonitor - Aplicación Móvil Android
 
 ![Estado](https://img.shields.io/badge/Estado-Desarrollo-success?style=for-the-badge&logo=android)
-![Kotlin](https://img.shields.io/badge/Kotlin-1.9+-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)
+![Kotlin](https://img.shields.io/badge/Kotlin-2.0+-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)
 ![Compose](https://img.shields.io/badge/Jetpack-Compose-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)
 ![Material3](https://img.shields.io/badge/Material-3-757575?style=for-the-badge&logo=materialdesign&logoColor=white)
 
-**InfraMonitor** es la interfaz móvil diseñada para interactuar con el [Agente Orquestador API](https://github.com/tu-usuario/monitoring-agent-api). Permite a los administradores de sistemas monitorear servidores Ubuntu y gestionar contenedores Docker directamente desde su smartphone, de forma segura y eficiente.
+**InfraMonitor** es la interfaz móvil diseñada para interactuar con el [Agente Orquestador API](https://github.com/andres07torres/monitoring-agent-api). Permite a los administradores de sistemas monitorear servidores Ubuntu y gestionar contenedores Docker directamente desde su smartphone, de forma segura y eficiente.
 
 ## 🚀 Características Principales
 
