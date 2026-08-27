@@ -30,6 +30,7 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
     data object Containers : Screen("containers", "Servicios", Icons.Default.Layers)
     data object Logs : Screen("logs", "Registros", Icons.Default.Description)
     data object Alerts : Screen("alerts", "Alertas", Icons.Default.Notifications)
+    data object Diagnostics : Screen("diagnostics", "Diagnóstico", Icons.Default.Build)
 }
 
 @Composable
@@ -63,7 +64,8 @@ fun MainScreen(onLogout: () -> Unit = {}) {
         Screen.Dashboard,
         Screen.Containers,
         Screen.Logs,
-        Screen.Alerts
+        Screen.Alerts,
+        Screen.Diagnostics
     )
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -214,6 +216,7 @@ fun MainScreen(onLogout: () -> Unit = {}) {
                     composable(Screen.Containers.route) { ContainersScreen() }
                     composable(Screen.Logs.route) { LogsScreen() }
                     composable(Screen.Alerts.route) { AlertsScreen() }
+                    composable(Screen.Diagnostics.route) { DiagnosticsScreen() }
                 }
             }
         }

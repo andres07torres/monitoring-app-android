@@ -22,7 +22,6 @@ class ContainersViewModel : ViewModel() {
 
     fun fetchContainers() {
         viewModelScope.launch {
-            _uiState.value = UiState.Loading
             try {
                 val response = RetrofitClient.instance.getContainers()
                 if (response.isSuccessful && response.body() != null) {
@@ -58,28 +57,63 @@ class ContainersViewModel : ViewModel() {
     fun restartContainer(containerId: String) {
         viewModelScope.launch {
             try {
-                // 1. Detener el contenedor
-                RetrofitClient.instance.stopContainer(containerId)
-                
-                // Actualizar UI localmente para feedback inmediato
-                _uiState.value = if (_uiState.value is UiState.Success) {
-                    val currentList = (_uiState.value as UiState.Success).data
-                    UiState.Success(currentList.map { 
-                        if (it.id == containerId) it.copy(status = "reiniciando...") else it
-                    })
-                } else _uiState.value
+                val response = RetrofitClient.instance.restartContainer(containerId)
+                if (response.isSuccessful) {
+                    fetchContainers()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
 
-                // 2. Esperar 5 segundos
-                delay(5000)
+    fun pauseContainer(containerId: String, isPaused: Boolean) {
+        viewModelScope.launch {
+            try {
+                val response = if (isPaused) {
+                    RetrofitClient.instance.unpauseContainer(containerId)
+                } else {
+                    RetrofitClient.instance.pauseContainer(containerId)
+                }
+                if (response.isSuccessful) {
+                    fetchContainers()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
 
-                // 3. Volver a activarlo
-                RetrofitClient.instance.startContainer(containerId)
-                
-                // Refrescar lista completa del servidor
+    fun removeContainer(containerId: String) {
+        viewModelScope.launch {
+            try {
+                val response = RetrofitClient.instance.removeContainer(containerId)
+                if (response.isSuccessful) {
+                    fetchContainers()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun pruneContainers() {
+        viewModelScope.launch {
+            try {
+                RetrofitClient.instance.pruneContainers()
                 fetchContainers()
             } catch (e: Exception) {
                 e.printStackTrace()
-                fetchContainers() // Volver al estado real si falla
+            }
+        }
+    }
+
+    fun pruneImages() {
+        viewModelScope.launch {
+            try {
+                RetrofitClient.instance.pruneImages()
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }

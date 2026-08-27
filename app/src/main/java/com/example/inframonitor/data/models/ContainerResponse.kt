@@ -3,7 +3,15 @@ package com.example.inframonitor.data.models
 data class ContainerResponse(
     val id: String,
     val name: String,
-    val status: String
+    val status: String,
+    val cpu_usage: Double? = null,
+    val ram_usage: Double? = null
+)
+
+data class HistoryPoint(
+    val timestamp: Long,
+    val cpu: Double,
+    val ram: Double
 )
 
 data class SystemStatsResponse(
@@ -25,5 +33,6 @@ data class ContainerLogsResponse(
 data class AlertResponse(
     val id: String,
     val severity: String,
-    val message: String
+    val message: String,
+    val timestamp: String? = null
 )

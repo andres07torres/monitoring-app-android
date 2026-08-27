@@ -14,28 +14,32 @@ import kotlinx.coroutines.launch
 class ConnectionViewModel(application: Application) : AndroidViewModel(application) {
     private val settingsManager = SettingsManager(application)
 
-    private val _serverUrl = MutableStateFlow<String?>(null)
-    val serverUrl: StateFlow<String?> = _serverUrl.asStateFlow()
-
     private val _isConfigured = MutableStateFlow<Boolean?>(null)
     val isConfigured: StateFlow<Boolean?> = _isConfigured.asStateFlow()
 
     init {
         viewModelScope.launch {
             val url = settingsManager.serverUrl.first()
-            _serverUrl.value = url
-            _isConfigured.value = url != null
+            val apiKey = settingsManager.apiKey.first()
+            
             if (url != null) {
                 RetrofitClient.updateBaseUrl(url)
+                RetrofitClient.updateApiKey(apiKey)
+                _isConfigured.value = true
+            } else {
+                _isConfigured.value = false
             }
         }
     }
 
-    fun saveUrl(url: String) {
+    fun saveConfig(url: String, apiKey: String) {
         viewModelScope.launch {
             settingsManager.saveServerUrl(url)
+            settingsManager.saveApiKey(apiKey)
+            
             RetrofitClient.updateBaseUrl(url)
-            _serverUrl.value = url
+            RetrofitClient.updateApiKey(apiKey)
+            
             _isConfigured.value = true
         }
     }
@@ -43,7 +47,7 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
     fun logout() {
         viewModelScope.launch {
             settingsManager.clearSettings()
-            _serverUrl.value = null
+            RetrofitClient.updateApiKey(null)
             _isConfigured.value = false
         }
     }

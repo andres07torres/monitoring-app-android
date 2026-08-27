@@ -9,9 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,6 +26,7 @@ import com.example.inframonitor.ui.UiState
 import com.example.inframonitor.viewmodel.ContainersViewModel
 import com.example.inframonitor.ui.theme.*
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -111,11 +110,20 @@ fun ContainersContent(containers: List<ContainerResponse>, viewModel: Containers
                     color = TextSecondary
                 )
             }
-            IconButton(
-                onClick = { viewModel.fetchContainers() },
-                modifier = Modifier.background(Surface, CircleShape).size(40.dp)
-            ) {
-                Icon(Icons.Default.Refresh, contentDescription = "Actualizar", tint = Primary, modifier = Modifier.size(20.dp))
+            Row {
+                IconButton(
+                    onClick = { viewModel.pruneContainers() },
+                    modifier = Modifier.background(Surface, CircleShape).size(40.dp)
+                ) {
+                    Icon(Icons.Default.DeleteSweep, contentDescription = "Poda", tint = Error, modifier = Modifier.size(20.dp))
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                IconButton(
+                    onClick = { viewModel.fetchContainers() },
+                    modifier = Modifier.background(Surface, CircleShape).size(40.dp)
+                ) {
+                    Icon(Icons.Default.Refresh, contentDescription = "Actualizar", tint = Primary, modifier = Modifier.size(20.dp))
+                }
             }
         }
 
@@ -177,6 +185,8 @@ fun ContainersContent(containers: List<ContainerResponse>, viewModel: Containers
                 onAction = { action ->
                     when(action) {
                         "restart" -> viewModel.restartContainer(selectedContainer!!.id)
+                        "pause" -> viewModel.pauseContainer(selectedContainer!!.id, selectedContainer!!.status == "paused")
+                        "remove" -> viewModel.removeContainer(selectedContainer!!.id)
                         else -> viewModel.toggleContainer(selectedContainer!!.id, selectedContainer!!.status)
                     }
                     scope.launch { sheetState.hide() }.invokeOnCompletion {
@@ -197,6 +207,7 @@ fun ContainerItem(
     onClick: () -> Unit
 ) {
     val isRunning = container.status == "running"
+    val isPaused = container.status == "paused"
     
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     val alpha by infiniteTransition.animateFloat(
@@ -217,82 +228,95 @@ fun ContainerItem(
         border = BorderStroke(1.dp, if (isRunning) Success.copy(alpha = 0.3f) else Outline),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Row(
-            modifier = Modifier.padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                if (isRunning) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    if (isRunning) {
+                        Box(
+                            modifier = Modifier
+                                .size(12.dp)
+                                .background(Success.copy(alpha = alpha), CircleShape)
+                        )
+                    }
                     Box(
                         modifier = Modifier
-                            .size(12.dp)
-                            .background(Success.copy(alpha = alpha), CircleShape)
+                            .size(8.dp)
+                            .background(if (isRunning) Success else (if (isPaused) Accent else Error), CircleShape)
                     )
                 }
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .background(if (isRunning) Success else Error, CircleShape)
-                )
-            }
-            
-            Spacer(modifier = Modifier.width(16.dp))
-            
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    container.name, 
-                    fontWeight = FontWeight.Bold, 
-                    fontSize = 16.sp,
-                    color = TextPrimary
-                )
                 
-                Text(
-                    "ID: ${container.id.take(12)}",
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontFamily = FontFamily.Monospace,
-                        color = TextSecondary,
-                        fontSize = 11.sp
-                    ),
-                    modifier = Modifier
-                        .padding(top = 4.dp)
-                        .background(Background, RoundedCornerShape(4.dp))
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
-                )
+                Spacer(modifier = Modifier.width(16.dp))
                 
-                Surface(
-                    color = if (isRunning) SuccessSoft else ErrorSoft,
-                    shape = RoundedCornerShape(4.dp),
-                    modifier = Modifier.padding(top = 8.dp)
-                ) {
-                    val displayStatus = when(container.status.lowercase()) {
-                        "running" -> "ACTIVO"
-                        "exited" -> "DETENIDO"
-                        "restarting" -> "REINICIANDO"
-                        "reiniciando..." -> "REINICIANDO..."
-                        else -> container.status.uppercase()
-                    }
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = displayStatus,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontWeight = FontWeight.ExtraBold,
-                            color = if (isRunning) Success else Error,
-                            fontSize = 9.sp
+                        container.name, 
+                        fontWeight = FontWeight.Bold, 
+                        fontSize = 16.sp,
+                        color = TextPrimary
+                    )
+                    
+                    Text(
+                        "ID: ${container.id.take(12)}",
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            fontFamily = FontFamily.Monospace,
+                            color = TextSecondary,
+                            fontSize = 11.sp
                         )
                     )
                 }
+
+                Switch(
+                    checked = isRunning,
+                    onCheckedChange = onToggle,
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Surface,
+                        checkedTrackColor = Success,
+                        uncheckedThumbColor = Surface,
+                        uncheckedTrackColor = TextMuted.copy(alpha = 0.5f),
+                        uncheckedBorderColor = Color.Transparent
+                    )
+                )
             }
 
-            Switch(
-                checked = isRunning,
-                onCheckedChange = onToggle,
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = Surface,
-                    checkedTrackColor = Success,
-                    uncheckedThumbColor = Surface,
-                    uncheckedTrackColor = TextMuted.copy(alpha = 0.5f),
-                    uncheckedBorderColor = Color.Transparent
-                )
+            if (isRunning) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    MetricBadge("CPU", "${String.format(Locale.getDefault(), "%.1f", container.cpu_usage ?: 0.0)}%", Primary)
+                    MetricBadge("RAM", "${String.format(Locale.getDefault(), "%.1f", container.ram_usage ?: 0.0)}%", Accent)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun MetricBadge(label: String, value: String, color: Color) {
+    Surface(
+        color = color.copy(alpha = 0.1f),
+        shape = RoundedCornerShape(8.dp),
+        border = BorderStroke(1.dp, color.copy(alpha = 0.2f))
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                label,
+                style = MaterialTheme.typography.labelSmall,
+                color = color,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                value,
+                style = MaterialTheme.typography.bodySmall,
+                color = TextPrimary,
+                fontWeight = FontWeight.Medium
             )
         }
     }
@@ -311,17 +335,30 @@ fun ContainerActionsContent(container: ContainerResponse, onAction: (String) -> 
             modifier = Modifier.padding(top = 8.dp)
         )
         Text(
-            text = "ID de instancia: ${container.id}",
-            style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+            text = "Estado: ${container.status.uppercase()}",
+            style = MaterialTheme.typography.bodySmall,
             color = TextSecondary,
             modifier = Modifier.padding(bottom = 24.dp)
         )
         
         HorizontalDivider(color = Outline, modifier = Modifier.padding(bottom = 16.dp))
 
-        ActionRow(Icons.Default.PlayArrow, "Iniciar instancia", Success) { onAction("start") }
-        ActionRow(Icons.Default.Stop, "Forzar detención", Error) { onAction("stop") }
+        if (container.status != "running") {
+            ActionRow(Icons.Default.PlayArrow, "Iniciar instancia", Success) { onAction("start") }
+        } else {
+            ActionRow(Icons.Default.Stop, "Detener instancia", Error) { onAction("stop") }
+        }
+        
         ActionRow(Icons.Default.Refresh, "Reiniciar servicio", Accent) { onAction("restart") }
+        
+        val isPaused = container.status == "paused"
+        ActionRow(
+            if (isPaused) Icons.Default.PlayCircle else Icons.Default.Pause,
+            if (isPaused) "Reanudar (Unpause)" else "Pausar instancia",
+            Primary
+        ) { onAction("pause") }
+
+        ActionRow(Icons.Default.Delete, "Eliminar contenedor", Error) { onAction("remove") }
     }
 }
 

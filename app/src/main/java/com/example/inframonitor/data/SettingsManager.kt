@@ -15,6 +15,7 @@ class SettingsManager(private val context: Context) {
 
     companion object {
         val SERVER_URL_KEY = stringPreferencesKey("server_url")
+        val API_KEY_KEY = stringPreferencesKey("api_key")
     }
 
     val serverUrl: Flow<String?> = context.dataStore.data
@@ -22,9 +23,20 @@ class SettingsManager(private val context: Context) {
             preferences[SERVER_URL_KEY]
         }
 
+    val apiKey: Flow<String?> = context.dataStore.data
+        .map { preferences ->
+            preferences[API_KEY_KEY]
+        }
+
     suspend fun saveServerUrl(url: String) {
         context.dataStore.edit { preferences ->
             preferences[SERVER_URL_KEY] = if (url.endsWith("/")) url else "$url/"
+        }
+    }
+
+    suspend fun saveApiKey(apiKey: String) {
+        context.dataStore.edit { preferences ->
+            preferences[API_KEY_KEY] = apiKey
         }
     }
 

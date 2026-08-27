@@ -4,22 +4,22 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Dns
+import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.inframonitor.ui.theme.*
 
 @Composable
-fun ConnectionScreen(onUrlSaved: (String) -> Unit) {
+fun ConnectionScreen(onConfigSaved: (String, String) -> Unit) {
     var urlInput by remember { mutableStateOf("") }
+    var apiKeyInput by remember { mutableStateOf("") }
     
     Box(
         modifier = Modifier
@@ -50,7 +50,7 @@ fun ConnectionScreen(onUrlSaved: (String) -> Unit) {
                 )
                 
                 Text(
-                    "Ingresa la URL de tu orquestador para comenzar a monitorear tu infraestructura.",
+                    "Ingresa la URL y tu API Key para proteger la conexión.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextSecondary,
                     textAlign = TextAlign.Center,
@@ -73,11 +73,28 @@ fun ConnectionScreen(onUrlSaved: (String) -> Unit) {
                         unfocusedBorderColor = Outline
                     )
                 )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                OutlinedTextField(
+                    value = apiKeyInput,
+                    onValueChange = { apiKeyInput = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("API Key / Token JWT") },
+                    leadingIcon = { Icon(Icons.Default.Key, contentDescription = null, tint = Primary) },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Primary,
+                        unfocusedBorderColor = Outline
+                    )
+                )
                 
                 Spacer(modifier = Modifier.height(24.dp))
                 
                 Button(
-                    onClick = { if (urlInput.isNotBlank()) onUrlSaved(urlInput) },
+                    onClick = { if (urlInput.isNotBlank()) onConfigSaved(urlInput, apiKeyInput) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp),

@@ -136,6 +136,14 @@ fun AlertItem(alert: AlertResponse) {
                     color = MaterialTheme.colorScheme.onSurface,
                     lineHeight = 20.sp
                 )
+                if (alert.timestamp != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        alert.timestamp,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                }
             }
         }
     }

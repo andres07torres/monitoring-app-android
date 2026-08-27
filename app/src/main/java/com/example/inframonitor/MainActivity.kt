@@ -11,15 +11,24 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.work.Constraints
+import androidx.work.NetworkType
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.example.inframonitor.ui.screens.ConnectionScreen
 import com.example.inframonitor.ui.screens.MainScreen
 import com.example.inframonitor.ui.theme.InfraMonitorTheme
 import com.example.inframonitor.viewmodel.ConnectionViewModel
+import com.example.inframonitor.worker.AlertWorker
+import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        
+        scheduleAlertWorker()
+
         setContent {
             InfraMonitorTheme {
                 val connectionViewModel: ConnectionViewModel = viewModel()
@@ -27,14 +36,13 @@ class MainActivity : ComponentActivity() {
 
                 when (isConfigured) {
                     null -> {
-                        // Cargando estado inicial de DataStore
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             CircularProgressIndicator()
                         }
                     }
                     false -> {
-                        ConnectionScreen(onUrlSaved = { url ->
-                            connectionViewModel.saveUrl(url)
+                        ConnectionScreen(onConfigSaved = { url, apiKey ->
+                            connectionViewModel.saveConfig(url, apiKey)
                         })
                     }
                     true -> {
@@ -45,5 +53,21 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    private fun scheduleAlertWorker() {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        val alertRequest = PeriodicWorkRequestBuilder<AlertWorker>(15, TimeUnit.MINUTES)
+            .setConstraints(constraints)
+            .build()
+
+        WorkManager.getInstance(applicationContext).enqueueUniquePeriodicWork(
+            "AlertWorker",
+            androidx.work.ExistingPeriodicWorkPolicy.KEEP,
+            alertRequest
+        )
     }
 }

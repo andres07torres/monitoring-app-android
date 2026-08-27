@@ -5,14 +5,15 @@ import com.example.inframonitor.data.models.SystemStatsResponse
 import com.example.inframonitor.data.models.ContainerLogsResponse
 import com.example.inframonitor.data.models.AlertResponse
 import retrofit2.Response
-import retrofit2.http.GET
-import retrofit2.http.POST
-import retrofit2.http.Path
+import retrofit2.http.*
 
 interface ServerApi {
     
     @GET("api/v1/system/stats")
     suspend fun getSystemStats(): Response<SystemStatsResponse>
+
+    @GET("api/v1/system/history")
+    suspend fun getSystemHistory(): Response<List<HistoryPoint>>
 
     @GET("api/v1/containers")
     suspend fun getContainers(): Response<List<ContainerResponse>>
@@ -23,9 +24,42 @@ interface ServerApi {
     @POST("api/v1/containers/{container_id}/stop")
     suspend fun stopContainer(@Path("container_id") id: String): Response<Unit>
 
+    @POST("api/v1/containers/{container_id}/restart")
+    suspend fun restartContainer(@Path("container_id") id: String): Response<Unit>
+
+    @POST("api/v1/containers/{container_id}/pause")
+    suspend fun pauseContainer(@Path("container_id") id: String): Response<Unit>
+
+    @POST("api/v1/containers/{container_id}/unpause")
+    suspend fun unpauseContainer(@Path("container_id") id: String): Response<Unit>
+
+    @DELETE("api/v1/containers/{container_id}")
+    suspend fun removeContainer(@Path("container_id") id: String): Response<Unit>
+
+    @POST("api/v1/containers/prune")
+    suspend fun pruneContainers(): Response<Unit>
+
+    @POST("api/v1/images/prune")
+    suspend fun pruneImages(): Response<Unit>
+
     @GET("api/v1/containers/{container_id}/logs")
     suspend fun getLogs(@Path("container_id") containerId: String): Response<ContainerLogsResponse>
 
     @GET("api/v1/alerts")
-    suspend fun getAlerts(): List<AlertResponse> // Retorno directo como Array según contrato real
+    suspend fun getAlerts(): List<AlertResponse>
+
+    @GET("api/v1/containers/{container_id}/stats/history")
+    suspend fun getContainerHistory(@Path("container_id") id: String): Response<List<HistoryPoint>>
+
+    // Healthchecks
+    @GET("api/v1/healthcheck")
+    suspend fun checkHealth(@Query("url") url: String): Response<HealthCheckResponse>
+
+    // Terminal / Diagnostics
+    @POST("api/v1/diagnostics/exec")
+    suspend fun executeCommand(@Body commandRequest: CommandRequest): Response<CommandResponse>
 }
+
+data class HealthCheckResponse(val status: Int, val message: String)
+data class CommandRequest(val command: String)
+data class CommandResponse(val output: String, val exitCode: Int)

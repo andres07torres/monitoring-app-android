@@ -3,6 +3,7 @@ package com.example.inframonitor.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.inframonitor.data.models.ContainerResponse
+import com.example.inframonitor.data.models.HistoryPoint
 import com.example.inframonitor.data.models.SystemStatsResponse
 import com.example.inframonitor.data.network.RetrofitClient
 import com.example.inframonitor.ui.UiState
@@ -14,7 +15,8 @@ import kotlinx.coroutines.launch
 
 data class DashboardData(
     val stats: SystemStatsResponse,
-    val containers: List<ContainerResponse>
+    val containers: List<ContainerResponse>,
+    val history: List<HistoryPoint> = emptyList()
 )
 
 class DashboardViewModel : ViewModel() {
@@ -46,12 +48,20 @@ class DashboardViewModel : ViewModel() {
         try {
             val statsResponse = RetrofitClient.instance.getSystemStats()
             val containersResponse = RetrofitClient.instance.getContainers()
+            val historyResponse = try { 
+                RetrofitClient.instance.getSystemHistory() 
+            } catch (e: Exception) { 
+                e.printStackTrace()
+                null 
+            }
 
             if (statsResponse.isSuccessful && containersResponse.isSuccessful) {
                 val stats = statsResponse.body()
                 val containers = containersResponse.body()
+                val history = historyResponse?.body() ?: emptyList<HistoryPoint>()
+                
                 if (stats != null && containers != null) {
-                    _uiState.value = UiState.Success(DashboardData(stats, containers))
+                    _uiState.value = UiState.Success(DashboardData(stats, containers, history))
                 }
             } else {
                 if (_uiState.value !is UiState.Success) {

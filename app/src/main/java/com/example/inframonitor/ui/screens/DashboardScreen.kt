@@ -8,9 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -25,6 +23,11 @@ import com.example.inframonitor.ui.UiState
 import com.example.inframonitor.viewmodel.DashboardData
 import com.example.inframonitor.viewmodel.DashboardViewModel
 import com.example.inframonitor.ui.theme.*
+import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
+import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
+import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
+import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
+import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
 
 @Composable
 fun DashboardScreen(viewModel: DashboardViewModel = viewModel()) {
@@ -62,6 +65,19 @@ fun DashboardContent(data: DashboardData, onRefresh: () -> Unit) {
     val stats = data.stats
     val containers = data.containers
     val activeContainers = containers.filter { it.status == "running" }
+    
+    val modelProducer = remember { CartesianChartModelProducer() }
+    
+    LaunchedEffect(data.history) {
+        if (data.history.isNotEmpty()) {
+            modelProducer.runTransaction {
+                lineSeries {
+                    series(data.history.map { it.cpu })
+                    series(data.history.map { it.ram })
+                }
+            }
+        }
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -100,14 +116,31 @@ fun DashboardContent(data: DashboardData, onRefresh: () -> Unit) {
                     "${stats.ram_total_gb} GB total",
                     Success
                 )
-                MetricCard(
-                    "Almacenamiento", 
-                    (stats.disk_percent?.toFloat() ?: 0f) / 100f, 
-                    "${stats.disk_percent?.toInt() ?: 0}%", 
-                    "${stats.disk_used_gb ?: 0.0} GB usados", 
-                    "${stats.disk_total_gb ?: 0.0} GB total",
-                    Warning
-                )
+            }
+        }
+
+        item {
+            SectionHeader("Histórico de Rendimiento")
+            Spacer(modifier = Modifier.height(12.dp))
+            Card(
+                modifier = Modifier.fillMaxWidth().height(200.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Surface),
+                border = CardDefaults.outlinedCardBorder()
+            ) {
+                Box(modifier = Modifier.padding(16.dp)) {
+                    if (data.history.isEmpty()) {
+                        Text("No hay datos históricos disponibles", modifier = Modifier.align(Alignment.Center), color = TextMuted)
+                    } else {
+                        CartesianChartHost(
+                            chart = rememberCartesianChart(
+                                rememberLineCartesianLayer()
+                            ),
+                            modelProducer = modelProducer,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
             }
         }
 
