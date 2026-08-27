@@ -56,7 +56,7 @@ fun AlertsScreen(viewModel: AlertsViewModel = viewModel()) {
 fun AlertsContent(alerts: List<AlertResponse>) {
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(16.dp).fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text("Alertas", fontWeight = FontWeight.Bold, fontSize = 14.sp)

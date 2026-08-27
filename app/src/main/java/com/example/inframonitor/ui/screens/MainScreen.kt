@@ -13,7 +13,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Devices
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.compose.NavHost
@@ -51,9 +54,11 @@ fun AppLogo(size: Int = 32, iconSize: Int = 20) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(onLogout: () -> Unit) {
+fun MainScreen(onLogout: () -> Unit = {}) {
     val navController = rememberNavController()
-    
+    val configuration = LocalConfiguration.current
+    val isWideScreen = configuration.screenWidthDp > 600
+
     val items = listOf(
         Screen.Dashboard,
         Screen.Containers,
@@ -64,100 +69,169 @@ fun MainScreen(onLogout: () -> Unit) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                navigationIcon = {
-                    Box(modifier = Modifier.padding(start = 16.dp, end = 8.dp)) {
-                        AppLogo()
-                    }
-                },
-                title = {
-                    Text(
-                        "Infra Control",
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 20.sp,
-                            color = TextPrimary
-                        )
-                    )
-                },
-                actions = {
-                    IconButton(onClick = onLogout) {
-                        Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Cerrar sesión", tint = TextSecondary)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Surface,
-                    titleContentColor = TextPrimary
-                ),
-                modifier = Modifier.statusBarsPadding()
-            )
-        },
-        bottomBar = {
-            NavigationBar(
+    Row(modifier = Modifier.fillMaxSize()) {
+        // Navegación Lateral para pantallas anchas (Tablets / Horizontal)
+        if (isWideScreen) {
+            NavigationRail(
                 containerColor = Surface,
-                tonalElevation = 8.dp,
-                modifier = Modifier.height(80.dp)
+                header = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        AppLogo(size = 40, iconSize = 24)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        IconButton(onClick = onLogout) {
+                            Icon(Icons.AutoMirrored.Filled.Logout, "Cerrar Sesión", tint = TextSecondary)
+                        }
+                    }
+                },
+                modifier = Modifier.width(80.dp)
             ) {
+                Spacer(modifier = Modifier.weight(1f))
                 items.forEach { screen ->
                     val selected = currentRoute == screen.route
-                    NavigationBarItem(
-                        icon = { 
-                            Icon(
-                                screen.icon, 
-                                contentDescription = screen.title,
-                                modifier = Modifier.size(24.dp)
-                            ) 
-                        },
-                        label = { 
-                            Text(
-                                screen.title,
-                                style = MaterialTheme.typography.labelMedium.copy(
-                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
-                                )
-                            ) 
-                        },
+                    NavigationRailItem(
                         selected = selected,
                         onClick = {
                             if (currentRoute != screen.route) {
                                 navController.navigate(screen.route) {
-                                    popUpTo(navController.graph.startDestinationId) {
-                                        saveState = true
-                                    }
+                                    popUpTo(navController.graph.startDestinationId) { saveState = true }
                                     launchSingleTop = true
                                     restoreState = true
                                 }
                             }
                         },
-                        colors = NavigationBarItemDefaults.colors(
+                        icon = { Icon(screen.icon, contentDescription = screen.title) },
+                        label = { Text(screen.title, fontSize = 10.sp) },
+                        colors = NavigationRailItemDefaults.colors(
                             selectedIconColor = Primary,
-                            selectedTextColor = Primary,
-                            unselectedIconColor = TextMuted,
-                            unselectedTextColor = TextMuted,
-                            indicatorColor = PrimarySoft
+                            indicatorColor = PrimarySoft,
+                            unselectedIconColor = TextMuted
                         )
                     )
                 }
+                Spacer(modifier = Modifier.weight(1f))
             }
         }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize()
-                .background(Background)
-        ) {
-            HorizontalDivider(color = Outline.copy(alpha = 0.5f))
-            NavHost(
-                navController = navController,
-                startDestination = Screen.Dashboard.route
+
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    navigationIcon = {
+                        if (!isWideScreen) {
+                            Box(modifier = Modifier.padding(start = 16.dp, end = 8.dp)) {
+                                AppLogo()
+                            }
+                        }
+                    },
+                    title = {
+                        Text(
+                            "Infra Control",
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 20.sp,
+                                color = TextPrimary
+                            )
+                        )
+                    },
+                    actions = {
+                        if (!isWideScreen) {
+                            IconButton(onClick = onLogout) {
+                                Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Cerrar sesión", tint = TextSecondary)
+                            }
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Surface,
+                        titleContentColor = TextPrimary
+                    ),
+                    modifier = Modifier.statusBarsPadding()
+                )
+            },
+            bottomBar = {
+                // Barra inferior SOLO para móviles en vertical
+                if (!isWideScreen) {
+                    NavigationBar(
+                        containerColor = Surface,
+                        tonalElevation = 8.dp,
+                        modifier = Modifier.height(80.dp)
+                    ) {
+                        items.forEach { screen ->
+                            val selected = currentRoute == screen.route
+                            NavigationBarItem(
+                                icon = { 
+                                    Icon(
+                                        screen.icon, 
+                                        contentDescription = screen.title,
+                                        modifier = Modifier.size(24.dp)
+                                    ) 
+                                },
+                                label = { 
+                                    Text(
+                                        screen.title,
+                                        style = MaterialTheme.typography.labelMedium.copy(
+                                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
+                                        )
+                                    ) 
+                                },
+                                selected = selected,
+                                onClick = {
+                                    if (currentRoute != screen.route) {
+                                        navController.navigate(screen.route) {
+                                            popUpTo(navController.graph.startDestinationId) {
+                                                saveState = true
+                                            }
+                                            launchSingleTop = true
+                                            restoreState = true
+                                        }
+                                    }
+                                },
+                                colors = NavigationBarItemDefaults.colors(
+                                    selectedIconColor = Primary,
+                                    selectedTextColor = Primary,
+                                    unselectedIconColor = TextMuted,
+                                    unselectedTextColor = TextMuted,
+                                    indicatorColor = PrimarySoft
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+        ) { innerPadding ->
+            Column(
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .fillMaxSize()
+                    .background(Background)
             ) {
-                composable(Screen.Dashboard.route) { DashboardScreen() }
-                composable(Screen.Containers.route) { ContainersScreen() }
-                composable(Screen.Logs.route) { LogsScreen() }
-                composable(Screen.Alerts.route) { AlertsScreen() }
+                HorizontalDivider(color = Outline.copy(alpha = 0.5f))
+                NavHost(
+                    navController = navController,
+                    startDestination = Screen.Dashboard.route,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    composable(Screen.Dashboard.route) { DashboardScreen() }
+                    composable(Screen.Containers.route) { ContainersScreen() }
+                    composable(Screen.Logs.route) { LogsScreen() }
+                    composable(Screen.Alerts.route) { AlertsScreen() }
+                }
             }
         }
+    }
+}
+
+@Preview(showBackground = true, name = "Vista Móvil (Vertical)")
+@Composable
+fun MainScreenPhonePreview() {
+    InfraMonitorTheme {
+        MainScreen()
+    }
+}
+
+@Preview(showBackground = true, device = Devices.TABLET, name = "Vista Tablet (Adaptativa)")
+@Composable
+fun MainScreenTabletPreview() {
+    InfraMonitorTheme {
+        MainScreen()
     }
 }
