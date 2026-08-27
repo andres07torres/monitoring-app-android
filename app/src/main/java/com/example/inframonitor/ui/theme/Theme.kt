@@ -10,17 +10,25 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
+/**
+ * Enterprise Dashboard Theme (M3 implementation)
+ * Uses high-contrast neutral backgrounds with sharp primary accents.
+ */
 private val LightColorScheme = lightColorScheme(
     primary = Primary,
     onPrimary = Surface,
     primaryContainer = PrimarySoft,
     onPrimaryContainer = Primary,
-    secondary = TextMuted,
+    secondary = Accent,
     onSecondary = Surface,
+    secondaryContainer = InfoSoft,
+    onSecondaryContainer = Info,
     background = Background,
     onBackground = TextPrimary,
     surface = Surface,
     onSurface = TextPrimary,
+    surfaceVariant = SurfaceAlt,
+    onSurfaceVariant = TextSecondary,
     outline = Outline,
     error = Error,
     onError = Surface,
@@ -31,17 +39,17 @@ private val LightColorScheme = lightColorScheme(
 @Composable
 fun InfraMonitorTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Desactivamos dynamicColor para mantener la identidad visual de "InfraMonitor"
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = LightColorScheme // Forzamos LightColorScheme según el sistema de diseño solicitado
+    // For monitoring dashboards, a clean Light theme is usually preferred for readability
+    val colorScheme = LightColorScheme 
 
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.surface.toArgb()
+            window.statusBarColor = colorScheme.background.toArgb()
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = true
         }
     }
