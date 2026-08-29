@@ -1,6 +1,6 @@
 # 📱 InfraMonitor - Aplicación Móvil Android
 
-![Estado](https://img.shields.io/badge/Estado-Desarrollo-success?style=for-the-badge&logo=android)
+![Estado](https://img.shields.io/badge/Estado-Completado-success?style=for-the-badge&logo=android)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.0+-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)
 ![Compose](https://img.shields.io/badge/Jetpack-Compose-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)
 ![Material3](https://img.shields.io/badge/Material-3-757575?style=for-the-badge&logo=materialdesign&logoColor=white)
