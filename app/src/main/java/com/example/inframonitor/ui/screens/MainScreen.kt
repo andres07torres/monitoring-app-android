@@ -33,7 +33,7 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
     data object Containers : Screen("containers", "Servicios", Icons.Default.Layers)
     data object Logs : Screen("logs", "Registros", Icons.Default.Description)
     data object Alerts : Screen("alerts", "Alertas", Icons.Default.Notifications)
-    data object Diagnostics : Screen("diagnostics", "Diagnóstico", Icons.Default.Build)
+    data object Diagnostics : Screen("diagnostics", "Salud", Icons.Default.Build)
 }
 
 @Composable
@@ -153,8 +153,7 @@ fun MainScreen(onLogout: () -> Unit = {}) {
                 if (!isWideScreen) {
                     NavigationBar(
                         containerColor = Surface,
-                        tonalElevation = 8.dp,
-                        modifier = Modifier.height(80.dp)
+                        tonalElevation = 8.dp
                     ) {
                         items.forEach { screen ->
                             val selected = currentRoute == screen.route
@@ -169,12 +168,16 @@ fun MainScreen(onLogout: () -> Unit = {}) {
                                 label = { 
                                     Text(
                                         screen.title,
-                                        style = MaterialTheme.typography.labelMedium.copy(
-                                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
-                                        )
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                                            fontSize = 10.sp
+                                        ),
+                                        maxLines = 1,
+                                        softWrap = false
                                     ) 
                                 },
                                 selected = selected,
+                                alwaysShowLabel = true,
                                 onClick = {
                                     if (currentRoute != screen.route) {
                                         navController.navigate(screen.route) {
