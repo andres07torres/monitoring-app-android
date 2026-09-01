@@ -77,15 +77,15 @@ fun MainScreen(onLogout: () -> Unit = {}) {
                 containerColor = Surface,
                 header = {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        AppLogo(size = 40, iconSize = 24)
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
+                        AppLogo(size = 36, iconSize = 22)
+                        Spacer(modifier = Modifier.height(8.dp))
                         IconButton(onClick = onLogout) {
                             Icon(Icons.AutoMirrored.Filled.Logout, "Cerrar Sesión", tint = TextSecondary)
                         }
                     }
                 },
-                modifier = Modifier.width(80.dp)
+                modifier = Modifier.width(96.dp)
             ) {
                 Spacer(modifier = Modifier.weight(1f))
                 items.forEach { screen ->
@@ -102,7 +102,14 @@ fun MainScreen(onLogout: () -> Unit = {}) {
                             }
                         },
                         icon = { Icon(screen.icon, contentDescription = screen.title) },
-                        label = { Text(screen.title, fontSize = 10.sp) },
+                        label = { 
+                            Text(
+                                screen.title, 
+                                fontSize = 10.sp,
+                                maxLines = 1,
+                                softWrap = false
+                            ) 
+                        },
                         colors = NavigationRailItemDefaults.colors(
                             selectedIconColor = Primary,
                             indicatorColor = PrimarySoft,
