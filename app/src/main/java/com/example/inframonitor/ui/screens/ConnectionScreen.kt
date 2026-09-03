@@ -2,7 +2,9 @@ package com.example.inframonitor.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Link
@@ -16,19 +18,23 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.inframonitor.ui.theme.*
 
 @Composable
-fun ConnectionScreen(onConfigSaved: (String, String) -> Unit) {
+fun ConnectionScreen(onConfigSaved: (String, String) -> Unit = { _, _ -> }) {
     var urlInput by remember { mutableStateOf("") }
     var apiKeyInput by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+    val scrollState = rememberScrollState()
     
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Background),
+            .background(Background)
+            .imePadding()
+            .verticalScroll(scrollState),
         contentAlignment = Alignment.Center
     ) {
         Card(
@@ -120,5 +126,13 @@ fun ConnectionScreen(onConfigSaved: (String, String) -> Unit) {
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ConnectionScreenPreview() {
+    InfraMonitorTheme {
+        ConnectionScreen()
     }
 }

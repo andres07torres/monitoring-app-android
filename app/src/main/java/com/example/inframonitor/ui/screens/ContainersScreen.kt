@@ -95,7 +95,7 @@ fun ContainersContent(containers: List<ContainerResponse>, viewModel: Containers
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     "Servicios Docker",
                     style = MaterialTheme.typography.headlineSmall.copy(
@@ -110,22 +110,8 @@ fun ContainersContent(containers: List<ContainerResponse>, viewModel: Containers
                     color = TextSecondary
                 )
             }
-            Surface(
-                onClick = { viewModel.fetchContainers() },
-                shape = CircleShape,
-                color = Surface,
-                tonalElevation = 2.dp,
-                modifier = Modifier.size(40.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        Icons.Default.Refresh, 
-                        contentDescription = "Actualizar", 
-                        tint = Primary, 
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
+            Spacer(modifier = Modifier.width(12.dp))
+            com.example.inframonitor.ui.components.RefreshButton(onClick = { viewModel.fetchContainers() })
         }
 
         Row(
@@ -360,6 +346,39 @@ fun ContainerActionsContent(container: ContainerResponse, onAction: (String) -> 
         ) { onAction("pause") }
 
         ActionRow(Icons.Default.Delete, "Eliminar contenedor", Error) { onAction("remove") }
+    }
+}
+
+@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+@Composable
+fun ContainersHeaderPreview() {
+    InfraMonitorTheme {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Background)
+                .padding(horizontal = 24.dp, vertical = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    "Servicios Docker",
+                    style = MaterialTheme.typography.headlineSmall.copy(
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = (-0.5).sp,
+                        color = TextPrimary
+                    )
+                )
+                Text(
+                    "4 instancias detectadas", 
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            com.example.inframonitor.ui.components.RefreshButton(onClick = {})
+        }
     }
 }
 

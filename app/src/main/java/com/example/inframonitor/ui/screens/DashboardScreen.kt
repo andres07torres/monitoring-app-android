@@ -5,8 +5,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -74,7 +72,7 @@ fun DashboardContent(data: DashboardData, onRefresh: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         "Panel de Control",
                         style = MaterialTheme.typography.headlineSmall.copy(
@@ -89,22 +87,8 @@ fun DashboardContent(data: DashboardData, onRefresh: () -> Unit) {
                         color = TextSecondary
                     )
                 }
-                Surface(
-                    onClick = onRefresh,
-                    shape = CircleShape,
-                    color = Surface,
-                    tonalElevation = 2.dp,
-                    modifier = Modifier.size(40.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            Icons.Default.Refresh, 
-                            contentDescription = "Actualizar", 
-                            tint = Primary, 
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
+                Spacer(modifier = Modifier.width(12.dp))
+                com.example.inframonitor.ui.components.RefreshButton(onClick = onRefresh)
             }
         }
 

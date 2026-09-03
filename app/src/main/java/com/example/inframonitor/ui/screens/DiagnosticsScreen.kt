@@ -4,7 +4,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -116,7 +115,7 @@ fun HeaderSection(onRefresh: () -> Unit) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column {
+        Column(modifier = Modifier.weight(1f)) {
             Text(
                 "Diagnóstico y Salud",
                 style = MaterialTheme.typography.headlineSmall.copy(
@@ -131,22 +130,8 @@ fun HeaderSection(onRefresh: () -> Unit) {
                 color = TextSecondary
             )
         }
-        Surface(
-            onClick = onRefresh,
-            shape = CircleShape,
-            color = Surface,
-            tonalElevation = 2.dp,
-            modifier = Modifier.size(40.dp)
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    Icons.Default.Refresh, 
-                    contentDescription = "Actualizar", 
-                    tint = Primary, 
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-        }
+        Spacer(modifier = Modifier.width(12.dp))
+        com.example.inframonitor.ui.components.RefreshButton(onClick = onRefresh)
     }
 }
 
