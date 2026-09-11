@@ -5,7 +5,10 @@ import androidx.lifecycle.viewModelScope
 import com.example.inframonitor.data.models.ContainerResponse
 import com.example.inframonitor.data.network.CommandRequest
 import com.example.inframonitor.data.network.RetrofitClient
+import com.example.inframonitor.data.network.WebSocketManager
+import com.example.inframonitor.data.network.WebSocketState
 import com.example.inframonitor.ui.UiState
+import com.example.inframonitor.utils.NetworkErrorMapper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,13 +28,16 @@ class DiagnosticsViewModel : ViewModel() {
     private val _actionMessage = MutableStateFlow<String?>(null)
     val actionMessage: StateFlow<String?> = _actionMessage.asStateFlow()
 
+    private val wsManager = WebSocketManager(viewModelScope)
+    val wsState: StateFlow<WebSocketState> = wsManager.connectionState
+
     private val _systemDetails = MutableStateFlow<Map<String, String>>(
         mapOf(
-            "Sistema Operativo" to "Ubuntu 22.04.3 LTS",
-            "Kernel" to "5.15.0-84-generic",
+            "Sistema Operativo" to "Ubuntu 22.04.3 LTS (Docker Engine)",
+            "Túnel Zero Trust" to "Cloudflare Tunnel (HTTPS/WSS)",
             "Arquitectura" to "x86_64",
             "Uptime" to "12 días, 4 horas, 22 min",
-            "Puertos Abiertos" to "22, 80, 443, 3000, 8080"
+            "Puertos Protegidos" to "443 (HTTPS), 8443 (WSS)"
         )
     )
     val systemDetails: StateFlow<Map<String, String>> = _systemDetails.asStateFlow()
@@ -41,6 +47,30 @@ class DiagnosticsViewModel : ViewModel() {
 
     init {
         fetchContainers()
+        observeWebSocketMessages()
+    }
+
+    private fun observeWebSocketMessages() {
+        viewModelScope.launch {
+            wsManager.messages.collect { message ->
+                _commandOutput.value = _commandOutput.value + "\n" + message
+            }
+        }
+    }
+
+    fun connectTerminalWebSocket() {
+        wsManager.connect("api/v1/diagnostics/ws")
+    }
+
+    fun sendTerminalMessage(input: String) {
+        if (!wsManager.sendMessage(input)) {
+            // Si el WebSocket no está activo, ejecuta vía REST
+            executeCommand(input)
+        }
+    }
+
+    fun disconnectTerminalWebSocket() {
+        wsManager.disconnect()
     }
 
     fun fetchContainers() {
@@ -51,10 +81,10 @@ class DiagnosticsViewModel : ViewModel() {
                 if (response.isSuccessful && response.body() != null) {
                     _containersState.value = UiState.Success(response.body()!!)
                 } else {
-                    _containersState.value = UiState.Error("Error: ${response.code()}")
+                    _containersState.value = UiState.Error(NetworkErrorMapper.parseResponseError(response))
                 }
             } catch (e: Exception) {
-                _containersState.value = UiState.Error(e.localizedMessage ?: "Error desconocido")
+                _containersState.value = UiState.Error(NetworkErrorMapper.parseThrowable(e))
             }
         }
     }
@@ -67,10 +97,10 @@ class DiagnosticsViewModel : ViewModel() {
                 if (response.isSuccessful) {
                     _commandOutput.value = response.body()?.output ?: "Sin salida"
                 } else {
-                    _commandOutput.value = "Error: ${response.code()}"
+                    _commandOutput.value = NetworkErrorMapper.parseResponseError(response)
                 }
             } catch (e: Exception) {
-                _commandOutput.value = "Error: ${e.localizedMessage}"
+                _commandOutput.value = NetworkErrorMapper.parseThrowable(e)
             } finally {
                 _isExecuting.value = false
             }
@@ -81,7 +111,6 @@ class DiagnosticsViewModel : ViewModel() {
         viewModelScope.launch {
             _isExecuting.value = true
             try {
-                // Simulamos ejecución de comandos específicos
                 val command = when(action) {
                     "docker_prune" -> "docker system prune -f"
                     "restart_orchestrator" -> "sudo systemctl restart inframonitor"
@@ -94,18 +123,13 @@ class DiagnosticsViewModel : ViewModel() {
                 if (response.isSuccessful) {
                     _actionMessage.value = "Éxito: ${action.replace("_", " ").uppercase()}"
                 } else {
-                    _actionMessage.value = "Error en la acción"
+                    _actionMessage.value = NetworkErrorMapper.parseResponseError(response)
                 }
             } catch (e: Exception) {
-                if (action == "restart_orchestrator" && (e is java.net.SocketTimeoutException || e.message?.contains("timeout", ignoreCase = true) == true)) {
-                    _actionMessage.value = "Reiniciando orquestador... espera unos segundos"
-                } else {
-                    _actionMessage.value = "Error: ${e.localizedMessage}"
-                }
+                _actionMessage.value = NetworkErrorMapper.parseThrowable(e)
             } finally {
                 _isExecuting.value = false
-                // Limpiar mensaje después de 3 segundos
-                kotlinx.coroutines.delay(3000)
+                kotlinx.coroutines.delay(4000)
                 _actionMessage.value = null
             }
         }
@@ -114,15 +138,14 @@ class DiagnosticsViewModel : ViewModel() {
     fun checkHealth(containerId: String, containerName: String) {
         viewModelScope.launch {
             try {
-                // Intentamos deducir una URL de salud basada en el nombre del contenedor
-                // Esto es un ejemplo, el backend debería proveer la URL real o manejar esto.
-                val testUrl = "http://$containerName:80/health" 
+                // HTTPS seguro por Cloudflare Zero Trust
+                val testUrl = "https://$containerName/health" 
                 
                 val response = RetrofitClient.instance.checkHealth(testUrl)
                 val statusText = if (response.isSuccessful) {
                     "OK (${response.body()?.status})"
                 } else {
-                    "Error: ${response.code()}"
+                    NetworkErrorMapper.parseResponseError(response)
                 }
                 
                 val current = _healthStatus.value.toMutableMap()
@@ -130,9 +153,14 @@ class DiagnosticsViewModel : ViewModel() {
                 _healthStatus.value = current
             } catch (e: Exception) {
                 val current = _healthStatus.value.toMutableMap()
-                current[containerId] = "Error: ${e.localizedMessage}"
+                current[containerId] = NetworkErrorMapper.parseThrowable(e)
                 _healthStatus.value = current
             }
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        wsManager.disconnect()
     }
 }

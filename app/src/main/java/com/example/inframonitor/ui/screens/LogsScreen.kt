@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.inframonitor.data.network.WebSocketState
 import com.example.inframonitor.ui.UiState
 import com.example.inframonitor.viewmodel.ContainersViewModel
 import com.example.inframonitor.viewmodel.LogsViewModel
@@ -31,8 +32,15 @@ fun LogsScreen(
 ) {
     val logsState by logsViewModel.uiState.collectAsState()
     val containersState by containersViewModel.uiState.collectAsState()
+    val wsState by logsViewModel.wsState.collectAsState()
     
     var selectedContainerId by remember { mutableStateOf<String?>(null) }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            logsViewModel.stopLiveLogsWebSocket()
+        }
+    }
 
     Column(modifier = Modifier.fillMaxSize().background(Background)) {
         Row(
@@ -50,13 +58,15 @@ fun LogsScreen(
                     )
                 )
                 Text(
-                    "Monitorización de eventos en tiempo real",
+                    "Monitorización de eventos en tiempo real (WSS)",
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextSecondary
                 )
             }
             Spacer(modifier = Modifier.width(12.dp))
-            com.example.inframonitor.ui.components.RefreshButton(onClick = { selectedContainerId?.let { logsViewModel.fetchLogs(it) } })
+            com.example.inframonitor.ui.components.RefreshButton(onClick = { 
+                selectedContainerId?.let { logsViewModel.startLiveLogsWebSocket(it) } 
+            })
         }
 
         Column(modifier = Modifier.padding(horizontal = 24.dp)) {
@@ -68,7 +78,7 @@ fun LogsScreen(
                             selected = selectedContainerId == container.id,
                             onClick = { 
                                 selectedContainerId = container.id
-                                logsViewModel.fetchLogs(container.id)
+                                logsViewModel.startLiveLogsWebSocket(container.id)
                             },
                             label = { Text(container.name) },
                             colors = FilterChipDefaults.filterChipColors(
@@ -91,9 +101,22 @@ fun LogsScreen(
             
             Spacer(modifier = Modifier.height(24.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(modifier = Modifier.size(6.dp).background(Error, CircleShape))
+                val dotColor = when (wsState) {
+                    is WebSocketState.Connected -> Success
+                    is WebSocketState.Connecting -> Warning
+                    is WebSocketState.Error -> Error
+                    else -> TextMuted
+                }
+                val statusLabel = when (wsState) {
+                    is WebSocketState.Connected -> "Transmisión WSS En Vivo (Cloudflare OK)"
+                    is WebSocketState.Connecting -> "Conectando WebSocket WSS..."
+                    is WebSocketState.Error -> (wsState as WebSocketState.Error).message
+                    else -> "Transmisión Lista"
+                }
+
+                Box(modifier = Modifier.size(8.dp).background(dotColor, CircleShape))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Transmisión en vivo", color = Error, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Text(statusLabel, color = dotColor, fontSize = 12.sp, fontWeight = FontWeight.Bold)
             }
         }
 
@@ -131,11 +154,11 @@ fun LogsScreen(
                             Text(text = state.message, color = Error)
                             Spacer(modifier = Modifier.height(16.dp))
                             Button(
-                                onClick = { logsViewModel.fetchLogs(selectedContainerId!!) },
+                                onClick = { selectedContainerId?.let { logsViewModel.startLiveLogsWebSocket(it) } },
                                 colors = ButtonDefaults.buttonColors(containerColor = Primary),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
-                                Text("Reintentar")
+                                Text("Reintentar Conexión")
                             }
                         }
                     }

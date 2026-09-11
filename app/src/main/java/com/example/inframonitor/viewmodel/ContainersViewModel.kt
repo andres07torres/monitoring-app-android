@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.inframonitor.data.models.ContainerResponse
 import com.example.inframonitor.data.network.RetrofitClient
 import com.example.inframonitor.ui.UiState
+import com.example.inframonitor.utils.NetworkErrorMapper
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,8 +17,15 @@ class ContainersViewModel : ViewModel() {
     private val _uiState = MutableStateFlow<UiState<List<ContainerResponse>>>(UiState.Loading)
     val uiState: StateFlow<UiState<List<ContainerResponse>>> = _uiState.asStateFlow()
 
+    private val _actionMessage = MutableStateFlow<String?>(null)
+    val actionMessage: StateFlow<String?> = _actionMessage.asStateFlow()
+
     init {
         fetchContainers()
+    }
+
+    fun clearActionMessage() {
+        _actionMessage.value = null
     }
 
     fun fetchContainers() {
@@ -27,10 +36,10 @@ class ContainersViewModel : ViewModel() {
                 if (response.isSuccessful && response.body() != null) {
                     _uiState.value = UiState.Success(response.body()!!)
                 } else {
-                    _uiState.value = UiState.Error("Error: ${response.code()}")
+                    _uiState.value = UiState.Error(NetworkErrorMapper.parseResponseError(response))
                 }
             } catch (e: Exception) {
-                _uiState.value = UiState.Error(e.message ?: "Error desconocido")
+                _uiState.value = UiState.Error(NetworkErrorMapper.parseThrowable(e))
             }
         }
     }
@@ -47,9 +56,11 @@ class ContainersViewModel : ViewModel() {
                 
                 if (response.isSuccessful) {
                     fetchContainers()
+                } else {
+                    handleActionError(NetworkErrorMapper.parseResponseError(response))
                 }
             } catch (e: Exception) {
-                // Manejar error
+                handleActionError(NetworkErrorMapper.parseThrowable(e))
             }
         }
     }
@@ -60,9 +71,11 @@ class ContainersViewModel : ViewModel() {
                 val response = RetrofitClient.instance.restartContainer(containerId)
                 if (response.isSuccessful) {
                     fetchContainers()
+                } else {
+                    handleActionError(NetworkErrorMapper.parseResponseError(response))
                 }
             } catch (e: Exception) {
-                // Silently fail or log to a production crashlytics
+                handleActionError(NetworkErrorMapper.parseThrowable(e))
             }
         }
     }
@@ -77,9 +90,11 @@ class ContainersViewModel : ViewModel() {
                 }
                 if (response.isSuccessful) {
                     fetchContainers()
+                } else {
+                    handleActionError(NetworkErrorMapper.parseResponseError(response))
                 }
             } catch (e: Exception) {
-                // Silently fail or log to a production crashlytics
+                handleActionError(NetworkErrorMapper.parseThrowable(e))
             }
         }
     }
@@ -90,9 +105,11 @@ class ContainersViewModel : ViewModel() {
                 val response = RetrofitClient.instance.removeContainer(containerId)
                 if (response.isSuccessful) {
                     fetchContainers()
+                } else {
+                    handleActionError(NetworkErrorMapper.parseResponseError(response))
                 }
             } catch (e: Exception) {
-                // Silently fail or log to a production crashlytics
+                handleActionError(NetworkErrorMapper.parseThrowable(e))
             }
         }
     }
@@ -100,11 +117,23 @@ class ContainersViewModel : ViewModel() {
     fun pruneContainers() {
         viewModelScope.launch {
             try {
-                RetrofitClient.instance.pruneSystem()
-                fetchContainers()
+                val response = RetrofitClient.instance.pruneSystem()
+                if (response.isSuccessful) {
+                    fetchContainers()
+                } else {
+                    handleActionError(NetworkErrorMapper.parseResponseError(response))
+                }
             } catch (e: Exception) {
-                // Silently fail or log to a production crashlytics
+                handleActionError(NetworkErrorMapper.parseThrowable(e))
             }
         }
+    }
+
+    private suspend fun handleActionError(errorMessage: String) {
+        _actionMessage.value = errorMessage
+        // Reintentamos actualizar la lista por si la operación continuó en segundo plano
+        fetchContainers()
+        delay(4000)
+        _actionMessage.value = null
     }
 }

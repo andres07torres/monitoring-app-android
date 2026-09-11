@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.inframonitor.data.models.AlertResponse
 import com.example.inframonitor.data.network.RetrofitClient
 import com.example.inframonitor.ui.UiState
+import com.example.inframonitor.utils.NetworkErrorMapper
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -33,11 +34,10 @@ class AlertsViewModel : ViewModel() {
         viewModelScope.launch {
             _uiState.value = UiState.Loading
             try {
-                // Llamada protegida para evitar Crash de la app
                 val response = RetrofitClient.instance.getAlerts()
                 _uiState.value = UiState.Success(response)
             } catch (e: Exception) {
-                _uiState.value = UiState.Error("Error al obtener alertas: ${e.localizedMessage}")
+                _uiState.value = UiState.Error(NetworkErrorMapper.parseThrowable(e))
             }
         }
     }

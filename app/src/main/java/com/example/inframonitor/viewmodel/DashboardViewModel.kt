@@ -6,6 +6,7 @@ import com.example.inframonitor.data.models.ContainerResponse
 import com.example.inframonitor.data.models.SystemStatsResponse
 import com.example.inframonitor.data.network.RetrofitClient
 import com.example.inframonitor.ui.UiState
+import com.example.inframonitor.utils.NetworkErrorMapper
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -60,12 +61,13 @@ class DashboardViewModel : ViewModel() {
                 }
             } else {
                 if (_uiState.value !is UiState.Success) {
-                    _uiState.value = UiState.Error("Fallo en la comunicación con el servidor")
+                    val err = if (!statsRes.isSuccessful) NetworkErrorMapper.parseResponseError(statsRes) else NetworkErrorMapper.parseResponseError(containersRes)
+                    _uiState.value = UiState.Error(err)
                 }
             }
         } catch (e: Exception) {
             if (_uiState.value !is UiState.Success) {
-                _uiState.value = UiState.Error(e.message ?: "Error de conexión")
+                _uiState.value = UiState.Error(NetworkErrorMapper.parseThrowable(e))
             }
         }
     }

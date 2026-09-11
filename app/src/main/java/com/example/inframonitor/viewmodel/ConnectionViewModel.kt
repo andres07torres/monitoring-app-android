@@ -19,16 +19,13 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
 
     init {
         viewModelScope.launch {
-            val url = settingsManager.serverUrl.first()
+            val url = settingsManager.serverUrl.first() ?: SettingsManager.DEFAULT_SERVER_URL
             val apiKey = settingsManager.apiKey.first()
             
-            if (url != null) {
-                RetrofitClient.updateBaseUrl(url)
-                RetrofitClient.updateApiKey(apiKey)
-                _isConfigured.value = true
-            } else {
-                _isConfigured.value = false
-            }
+            RetrofitClient.updateBaseUrl(url)
+            RetrofitClient.updateApiKey(apiKey)
+            
+            _isConfigured.value = url.isNotBlank()
         }
     }
 

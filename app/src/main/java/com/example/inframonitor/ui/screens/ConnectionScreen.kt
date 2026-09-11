@@ -24,7 +24,7 @@ import com.example.inframonitor.ui.theme.*
 
 @Composable
 fun ConnectionScreen(onConfigSaved: (String, String) -> Unit = { _, _ -> }) {
-    var urlInput by remember { mutableStateOf("") }
+    var urlInput by remember { mutableStateOf("https://api-infra.andr3sdev7.com") }
     var apiKeyInput by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
@@ -60,7 +60,7 @@ fun ConnectionScreen(onConfigSaved: (String, String) -> Unit = { _, _ -> }) {
                 )
                 
                 Text(
-                    "Ingresa la URL y tu API Key para proteger la conexión.",
+                    "Ingresa la URL HTTPS/WSS y tu API Key para asegurar la conexión con Cloudflare Zero Trust.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextSecondary,
                     textAlign = TextAlign.Center,
@@ -73,8 +73,8 @@ fun ConnectionScreen(onConfigSaved: (String, String) -> Unit = { _, _ -> }) {
                     value = urlInput,
                     onValueChange = { urlInput = it },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("URL del Orquestador") },
-                    placeholder = { Text("https://tu-api.com") },
+                    label = { Text("URL Base (HTTPS)") },
+                    placeholder = { Text("https://api-infra.andr3sdev7.com") },
                     leadingIcon = { Icon(Icons.Default.Link, contentDescription = null, tint = Primary) },
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp),
@@ -90,7 +90,7 @@ fun ConnectionScreen(onConfigSaved: (String, String) -> Unit = { _, _ -> }) {
                     value = apiKeyInput,
                     onValueChange = { apiKeyInput = it },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("API Key / Token JWT") },
+                    label = { Text("API Key / Token (X-API-Key)") },
                     leadingIcon = { Icon(Icons.Default.Key, contentDescription = null, tint = Primary) },
                     trailingIcon = {
                         val image = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff

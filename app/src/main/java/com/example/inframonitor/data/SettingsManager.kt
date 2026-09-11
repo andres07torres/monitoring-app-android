@@ -16,6 +16,7 @@ class SettingsManager(private val context: Context) {
     companion object {
         val SERVER_URL_KEY = stringPreferencesKey("server_url")
         val API_KEY_KEY = stringPreferencesKey("api_key")
+        const val DEFAULT_SERVER_URL = "https://api-infra.andr3sdev7.com/"
     }
 
     val serverUrl: Flow<String?> = context.dataStore.data
@@ -29,14 +30,21 @@ class SettingsManager(private val context: Context) {
         }
 
     suspend fun saveServerUrl(url: String) {
+        var trimmed = url.trim()
+        if (trimmed.startsWith("http://")) {
+            trimmed = "https://" + trimmed.substring(7)
+        } else if (!trimmed.startsWith("https://")) {
+            trimmed = "https://$trimmed"
+        }
+        val finalUrl = if (trimmed.endsWith("/")) trimmed else "$trimmed/"
         context.dataStore.edit { preferences ->
-            preferences[SERVER_URL_KEY] = if (url.endsWith("/")) url else "$url/"
+            preferences[SERVER_URL_KEY] = finalUrl
         }
     }
 
     suspend fun saveApiKey(apiKey: String) {
         context.dataStore.edit { preferences ->
-            preferences[API_KEY_KEY] = apiKey
+            preferences[API_KEY_KEY] = apiKey.trim()
         }
     }
 

@@ -32,39 +32,64 @@ import java.util.Locale
 @Composable
 fun ContainersScreen(viewModel: ContainersViewModel = viewModel()) {
     val uiState by viewModel.uiState.collectAsState()
-    
-    Box(modifier = Modifier.fillMaxSize().background(Background)) {
-        when (val state = uiState) {
-            is UiState.Loading -> {
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center),
-                    color = Primary,
-                    strokeWidth = 3.dp
-                )
-            }
-            is UiState.Success -> {
-                ContainersContent(state.data, viewModel)
-            }
-            is UiState.Error -> {
-                Column(
-                    modifier = Modifier.align(Alignment.Center).padding(32.dp), 
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Icon(Icons.Default.Stop, contentDescription = null, tint = Error, modifier = Modifier.size(48.dp))
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = state.message, 
-                        color = TextPrimary,
-                        fontWeight = FontWeight.Medium,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+    val actionMessage by viewModel.actionMessage.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(actionMessage) {
+        actionMessage?.let { msg ->
+            snackbarHostState.showSnackbar(msg)
+        }
+    }
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        containerColor = Background
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .background(Background)
+        ) {
+            when (val state = uiState) {
+                is UiState.Loading -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center),
+                        color = Primary,
+                        strokeWidth = 3.dp
                     )
-                    Button(
-                        onClick = { viewModel.fetchContainers() }, 
-                        modifier = Modifier.padding(top = 16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Primary),
-                        shape = RoundedCornerShape(8.dp)
+                }
+                is UiState.Success -> {
+                    ContainersContent(state.data, viewModel)
+                }
+                is UiState.Error -> {
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text("Reintentar Conexión")
+                        Icon(
+                            Icons.Default.Stop,
+                            contentDescription = null,
+                            tint = Error,
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = state.message,
+                            color = TextPrimary,
+                            fontWeight = FontWeight.Medium,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                        Button(
+                            onClick = { viewModel.fetchContainers() },
+                            modifier = Modifier.padding(top = 16.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Primary),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("Reintentar Conexión")
+                        }
                     }
                 }
             }
@@ -91,7 +116,9 @@ fun ContainersContent(containers: List<ContainerResponse>, viewModel: Containers
 
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
-            modifier = Modifier.padding(24.dp).fillMaxWidth(),
+            modifier = Modifier
+                .padding(24.dp)
+                .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -105,7 +132,7 @@ fun ContainersContent(containers: List<ContainerResponse>, viewModel: Containers
                     )
                 )
                 Text(
-                    "${filteredContainers.size} instancias detectadas", 
+                    "${filteredContainers.size} instancias detectadas",
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextSecondary
                 )
@@ -115,7 +142,9 @@ fun ContainersContent(containers: List<ContainerResponse>, viewModel: Containers
         }
 
         Row(
-            modifier = Modifier.padding(horizontal = 24.dp).fillMaxWidth(),
+            modifier = Modifier
+                .padding(horizontal = 24.dp)
+                .fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             filters.forEach { filter ->
@@ -147,7 +176,7 @@ fun ContainersContent(containers: List<ContainerResponse>, viewModel: Containers
             items(filteredContainers, key = { it.id }) { container ->
                 ContainerItem(
                     container = container,
-                    onToggle = { 
+                    onToggle = {
                         viewModel.toggleContainer(container.id, container.status)
                     },
                     onClick = {
@@ -170,7 +199,7 @@ fun ContainersContent(containers: List<ContainerResponse>, viewModel: Containers
             ContainerActionsContent(
                 container = selectedContainer!!,
                 onAction = { action ->
-                    when(action) {
+                    when (action) {
                         "restart" -> viewModel.restartContainer(selectedContainer!!.id)
                         "pause" -> viewModel.pauseContainer(selectedContainer!!.id, selectedContainer!!.status == "paused")
                         "remove" -> viewModel.removeContainer(selectedContainer!!.id)
@@ -189,13 +218,13 @@ fun ContainersContent(containers: List<ContainerResponse>, viewModel: Containers
 
 @Composable
 fun ContainerItem(
-    container: ContainerResponse, 
+    container: ContainerResponse,
     onToggle: (Boolean) -> Unit,
     onClick: () -> Unit
 ) {
     val isRunning = container.status == "running"
     val isPaused = container.status == "paused"
-    
+
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     val alpha by infiniteTransition.animateFloat(
         initialValue = 0.4f,
@@ -233,17 +262,17 @@ fun ContainerItem(
                             .background(if (isRunning) Success else (if (isPaused) Accent else Error), CircleShape)
                     )
                 }
-                
+
                 Spacer(modifier = Modifier.width(16.dp))
-                
+
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        container.name, 
-                        fontWeight = FontWeight.Bold, 
+                        container.name,
+                        fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
                         color = TextPrimary
                     )
-                    
+
                     Text(
                         "ID: ${container.id.take(12)}",
                         style = MaterialTheme.typography.bodySmall.copy(
@@ -312,7 +341,9 @@ fun MetricBadge(label: String, value: String, color: Color) {
 @Composable
 fun ContainerActionsContent(container: ContainerResponse, onAction: (String) -> Unit) {
     Column(
-        modifier = Modifier.fillMaxWidth().padding(bottom = 40.dp, start = 24.dp, end = 24.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 40.dp, start = 24.dp, end = 24.dp)
     ) {
         Text(
             text = container.name,
@@ -327,7 +358,7 @@ fun ContainerActionsContent(container: ContainerResponse, onAction: (String) -> 
             color = TextSecondary,
             modifier = Modifier.padding(bottom = 24.dp)
         )
-        
+
         HorizontalDivider(color = Outline, modifier = Modifier.padding(bottom = 16.dp))
 
         if (container.status != "running") {
@@ -335,9 +366,9 @@ fun ContainerActionsContent(container: ContainerResponse, onAction: (String) -> 
         } else {
             ActionRow(Icons.Default.Stop, "Detener instancia", Error) { onAction("stop") }
         }
-        
+
         ActionRow(Icons.Default.Refresh, "Reiniciar servicio", Accent) { onAction("restart") }
-        
+
         val isPaused = container.status == "paused"
         ActionRow(
             if (isPaused) Icons.Default.PlayCircle else Icons.Default.Pause,
@@ -371,7 +402,7 @@ fun ContainersHeaderPreview() {
                     )
                 )
                 Text(
-                    "4 instancias detectadas", 
+                    "4 instancias detectadas",
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextSecondary
                 )
@@ -386,7 +417,9 @@ fun ContainersHeaderPreview() {
 fun ActionRow(icon: ImageVector, label: String, color: Color, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth().height(56.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp),
         color = Color.Transparent,
         shape = RoundedCornerShape(12.dp)
     ) {
