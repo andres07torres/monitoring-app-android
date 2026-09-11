@@ -58,19 +58,27 @@ class WebSocketManager(
         reconnectJob?.cancel()
 
         val wsBaseUrl = RetrofitClient.getWsBaseUrl()
-        val fullUrl = if (endpointPath.startsWith("ws://") || endpointPath.startsWith("wss://")) {
+        val rawUrl = if (endpointPath.startsWith("ws://") || endpointPath.startsWith("wss://")) {
             endpointPath
         } else {
             val sanitizedPath = if (endpointPath.startsWith("/")) endpointPath.drop(1) else endpointPath
             "$wsBaseUrl$sanitizedPath"
         }
 
+        val apiKey = RetrofitClient.getCurrentApiKey()
+        
+        // Inyección del token tanto en URL (Query Params) como en Headers para compatibilidad total con FastAPI/ASGI y Cloudflare Zero Trust
+        val fullUrl = if (!apiKey.isNullOrBlank()) {
+            val separator = if (rawUrl.contains("?")) "&" else "?"
+            "$rawUrl${separator}token=$apiKey&api_key=$apiKey&x_api_key=$apiKey"
+        } else {
+            rawUrl
+        }
+
         _connectionState.value = WebSocketState.Connecting
 
         val requestBuilder = Request.Builder().url(fullUrl)
 
-        // Inyección Global del Token en el handshake del WebSocket
-        val apiKey = RetrofitClient.getCurrentApiKey()
         if (!apiKey.isNullOrBlank()) {
             requestBuilder.header("X-API-Key", apiKey)
             requestBuilder.header("Authorization", "Bearer $apiKey")
@@ -114,6 +122,7 @@ class WebSocketManager(
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+                val statusCode = response?.code ?: 0
                 val errorMsg = if (response != null) {
                     NetworkErrorMapper.parseResponseError(response)
                 } else {
@@ -122,7 +131,10 @@ class WebSocketManager(
 
                 _connectionState.value = WebSocketState.Error(errorMsg)
 
-                if (!isIntentionallyClosed) {
+                // Si es un error 403 / 401 de autenticación, no reintentamos en bucle infinito
+                if (statusCode == 401 || statusCode == 403) {
+                    isIntentionallyClosed = true
+                } else if (!isIntentionallyClosed) {
                     scheduleReconnect()
                 }
             }
@@ -147,7 +159,6 @@ class WebSocketManager(
         reconnectJob?.cancel()
         reconnectJob = scope.launch {
             reconnectAttempt++
-            // Backoff exponencial con máximo de 30 segundos
             val delayMs = (2000L * (1 shl (reconnectAttempt - 1).coerceAtMost(4))).coerceAtMost(30000L)
             _connectionState.value = WebSocketState.Error("Conexión perdida. Reconectando en ${delayMs / 1000}s...")
             delay(delayMs)

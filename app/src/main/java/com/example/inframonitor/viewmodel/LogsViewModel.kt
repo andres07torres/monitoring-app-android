@@ -42,11 +42,12 @@ class LogsViewModel : ViewModel() {
         currentLogsList.clear()
         _uiState.value = UiState.Loading
         
-        // Primero intentamos cargar logs iniciales por REST
+        // Primero cargamos logs iniciales por REST
         fetchLogs(containerId)
         
-        // Luego conectamos WebSocket seguro (wss://) con ping-pong heartbeat
-        wsManager.connect("api/v1/containers/$containerId/logs/ws")
+        // Conexión exacta al endpoint WebSocket de streaming de logs
+        // Ruta final: wss://api-infra.andr3sdev7.com/ws/v1/containers/{container_id}/logs/stream
+        wsManager.connect("ws/v1/containers/$containerId/logs/stream")
     }
 
     fun stopLiveLogsWebSocket() {

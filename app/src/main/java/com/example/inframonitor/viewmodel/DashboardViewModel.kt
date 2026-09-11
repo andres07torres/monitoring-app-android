@@ -5,8 +5,11 @@ import androidx.lifecycle.viewModelScope
 import com.example.inframonitor.data.models.ContainerResponse
 import com.example.inframonitor.data.models.SystemStatsResponse
 import com.example.inframonitor.data.network.RetrofitClient
+import com.example.inframonitor.data.network.WebSocketManager
+import com.example.inframonitor.data.network.WebSocketState
 import com.example.inframonitor.ui.UiState
 import com.example.inframonitor.utils.NetworkErrorMapper
+import com.google.gson.Gson
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,8 +27,36 @@ class DashboardViewModel : ViewModel() {
     private val _uiState = MutableStateFlow<UiState<DashboardData>>(UiState.Loading)
     val uiState: StateFlow<UiState<DashboardData>> = _uiState.asStateFlow()
 
+    private val wsManager = WebSocketManager(viewModelScope)
+    val wsState: StateFlow<WebSocketState> = wsManager.connectionState
+
+    private val gson = Gson()
+
     init {
         startPolling()
+        startLiveSystemStream()
+    }
+
+    private fun startLiveSystemStream() {
+        // Conexión exacta al endpoint WebSocket de métricas en vivo
+        // Ruta final: wss://api-infra.andr3sdev7.com/ws/v1/system/stream
+        wsManager.connect("ws/v1/system/stream")
+
+        viewModelScope.launch {
+            wsManager.messages.collect { message ->
+                try {
+                    val updatedStats = gson.fromJson(message, SystemStatsResponse::class.java)
+                    val currentState = _uiState.value
+                    if (currentState is UiState.Success) {
+                        _uiState.value = UiState.Success(
+                            currentState.data.copy(stats = updatedStats)
+                        )
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
     }
 
     private fun startPolling() {
@@ -41,6 +72,7 @@ class DashboardViewModel : ViewModel() {
         viewModelScope.launch {
             _uiState.value = UiState.Loading
             fetchDashboardData()
+            wsManager.connect("ws/v1/system/stream")
         }
     }
 
@@ -70,5 +102,10 @@ class DashboardViewModel : ViewModel() {
                 _uiState.value = UiState.Error(NetworkErrorMapper.parseThrowable(e))
             }
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        wsManager.disconnect()
     }
 }
