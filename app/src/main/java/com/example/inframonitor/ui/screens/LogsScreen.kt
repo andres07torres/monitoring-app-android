@@ -77,8 +77,10 @@ fun LogsScreen(
                         FilterChip(
                             selected = selectedContainerId == container.id,
                             onClick = { 
-                                selectedContainerId = container.id
-                                logsViewModel.startLiveLogsWebSocket(container.id)
+                                if (selectedContainerId != container.id) {
+                                    selectedContainerId = container.id
+                                    logsViewModel.startLiveLogsWebSocket(container.id)
+                                }
                             },
                             label = { Text(container.name) },
                             colors = FilterChipDefaults.filterChipColors(

@@ -40,7 +40,7 @@ class WebSocketManager(
     private val _connectionState = MutableStateFlow<WebSocketState>(WebSocketState.Disconnected)
     val connectionState: StateFlow<WebSocketState> = _connectionState.asStateFlow()
 
-    private val _messages = MutableSharedFlow<String>(extraBufferCapacity = 64)
+    private val _messages = MutableSharedFlow<String>(extraBufferCapacity = 128)
     val messages: SharedFlow<String> = _messages.asSharedFlow()
 
     private fun createOkHttpClient(): OkHttpClient {
@@ -53,6 +53,11 @@ class WebSocketManager(
     }
 
     fun connect(endpointPath: String) {
+        if (currentUrlPath == endpointPath && (_connectionState.value is WebSocketState.Connected || _connectionState.value is WebSocketState.Connecting)) {
+            // Ya está activo o conectando a este mismo endpoint, ignoramos reconexión redundante
+            return
+        }
+
         isIntentionallyClosed = false
         currentUrlPath = endpointPath
         reconnectJob?.cancel()
@@ -86,35 +91,43 @@ class WebSocketManager(
 
         val request = requestBuilder.build()
 
-        webSocket?.cancel()
+        val oldSocket = webSocket
         webSocket = client.newWebSocket(request, createWebSocketListener())
+        
+        // Cancelamos la referencia previa sin que dispare reconexión fantasma
+        oldSocket?.cancel()
     }
 
     private fun createWebSocketListener(): WebSocketListener {
         return object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
+                if (webSocket != this@WebSocketManager.webSocket) return
                 _connectionState.value = WebSocketState.Connected
                 reconnectAttempt = 0
             }
 
             override fun onMessage(webSocket: WebSocket, text: String) {
+                if (webSocket != this@WebSocketManager.webSocket) return
                 scope.launch {
                     _messages.emit(text)
                 }
             }
 
             override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
+                if (webSocket != this@WebSocketManager.webSocket) return
                 scope.launch {
                     _messages.emit(bytes.utf8())
                 }
             }
 
             override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
+                if (webSocket != this@WebSocketManager.webSocket) return
                 webSocket.close(1000, null)
                 _connectionState.value = WebSocketState.Disconnected
             }
 
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+                if (webSocket != this@WebSocketManager.webSocket) return
                 _connectionState.value = WebSocketState.Disconnected
                 if (!isIntentionallyClosed) {
                     scheduleReconnect()
@@ -122,6 +135,7 @@ class WebSocketManager(
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+                if (webSocket != this@WebSocketManager.webSocket) return
                 val statusCode = response?.code ?: 0
                 val errorMsg = if (response != null) {
                     NetworkErrorMapper.parseResponseError(response)
@@ -131,7 +145,6 @@ class WebSocketManager(
 
                 _connectionState.value = WebSocketState.Error(errorMsg)
 
-                // Si es un error 403 / 401 de autenticación, no reintentamos en bucle infinito
                 if (statusCode == 401 || statusCode == 403) {
                     isIntentionallyClosed = true
                 } else if (!isIntentionallyClosed) {
@@ -147,6 +160,7 @@ class WebSocketManager(
 
     fun disconnect() {
         isIntentionallyClosed = true
+        currentUrlPath = null
         reconnectJob?.cancel()
         webSocket?.close(1000, "Cierre normal por cliente")
         webSocket = null

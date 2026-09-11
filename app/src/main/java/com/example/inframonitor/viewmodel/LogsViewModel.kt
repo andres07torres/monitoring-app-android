@@ -2,11 +2,13 @@ package com.example.inframonitor.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.inframonitor.data.models.ContainerLogsResponse
 import com.example.inframonitor.data.network.RetrofitClient
 import com.example.inframonitor.data.network.WebSocketManager
 import com.example.inframonitor.data.network.WebSocketState
 import com.example.inframonitor.ui.UiState
 import com.example.inframonitor.utils.NetworkErrorMapper
+import com.google.gson.Gson
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,6 +25,7 @@ class LogsViewModel : ViewModel() {
 
     private var wsJob: Job? = null
     private val currentLogsList = mutableListOf<String>()
+    private val gson = Gson()
 
     init {
         observeWebSocketMessages()
@@ -31,20 +34,38 @@ class LogsViewModel : ViewModel() {
     private fun observeWebSocketMessages() {
         wsJob = viewModelScope.launch {
             wsManager.messages.collect { rawMessage ->
-                // Procesamiento directo de texto plano (Raw String)
-                // Dividimos por saltos de línea (\n) si el servidor envía bloques de texto
-                val lines = rawMessage.split("\n")
-                    .map { it.trimEnd() }
-                    .filter { it.isNotEmpty() }
-
-                if (lines.isNotEmpty()) {
-                    currentLogsList.addAll(lines)
-                } else if (rawMessage.isNotBlank()) {
-                    currentLogsList.add(rawMessage)
+                val trimmed = rawMessage.trim()
+                
+                // Soporte híbrido e inteligente: procesa tanto JSON {"logs": [...]} como Texto Plano (Raw String)
+                if (trimmed.startsWith("{")) {
+                    try {
+                        val parsed = gson.fromJson(trimmed, ContainerLogsResponse::class.java)
+                        if (parsed?.logs != null) {
+                            currentLogsList.addAll(parsed.logs)
+                        } else {
+                            addRawTextLines(trimmed)
+                        }
+                    } catch (e: Exception) {
+                        addRawTextLines(trimmed)
+                    }
+                } else {
+                    addRawTextLines(trimmed)
                 }
 
                 _uiState.value = UiState.Success(currentLogsList.toList())
             }
+        }
+    }
+
+    private fun addRawTextLines(text: String) {
+        val lines = text.split("\n")
+            .map { it.trimEnd() }
+            .filter { it.isNotEmpty() }
+
+        if (lines.isNotEmpty()) {
+            currentLogsList.addAll(lines)
+        } else if (text.isNotBlank()) {
+            currentLogsList.add(text)
         }
     }
 
@@ -56,7 +77,7 @@ class LogsViewModel : ViewModel() {
         // Carga inicial de logs por REST
         fetchLogs(containerId)
         
-        // Conexión WebSocket seguro de logs en texto plano (Raw String)
+        // Conexión WebSocket seguro de logs
         // Ruta: wss://api-infra.andr3sdev7.com/ws/v1/containers/{container_id}/logs/stream
         wsManager.connect("ws/v1/containers/$containerId/logs/stream")
     }
