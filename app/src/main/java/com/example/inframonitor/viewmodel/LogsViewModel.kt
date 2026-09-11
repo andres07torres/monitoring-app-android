@@ -30,8 +30,19 @@ class LogsViewModel : ViewModel() {
 
     private fun observeWebSocketMessages() {
         wsJob = viewModelScope.launch {
-            wsManager.messages.collect { message ->
-                currentLogsList.add(message)
+            wsManager.messages.collect { rawMessage ->
+                // Procesamiento directo de texto plano (Raw String)
+                // Dividimos por saltos de línea (\n) si el servidor envía bloques de texto
+                val lines = rawMessage.split("\n")
+                    .map { it.trimEnd() }
+                    .filter { it.isNotEmpty() }
+
+                if (lines.isNotEmpty()) {
+                    currentLogsList.addAll(lines)
+                } else if (rawMessage.isNotBlank()) {
+                    currentLogsList.add(rawMessage)
+                }
+
                 _uiState.value = UiState.Success(currentLogsList.toList())
             }
         }
@@ -42,11 +53,11 @@ class LogsViewModel : ViewModel() {
         currentLogsList.clear()
         _uiState.value = UiState.Loading
         
-        // Primero cargamos logs iniciales por REST
+        // Carga inicial de logs por REST
         fetchLogs(containerId)
         
-        // Conexión exacta al endpoint WebSocket de streaming de logs
-        // Ruta final: wss://api-infra.andr3sdev7.com/ws/v1/containers/{container_id}/logs/stream
+        // Conexión WebSocket seguro de logs en texto plano (Raw String)
+        // Ruta: wss://api-infra.andr3sdev7.com/ws/v1/containers/{container_id}/logs/stream
         wsManager.connect("ws/v1/containers/$containerId/logs/stream")
     }
 
