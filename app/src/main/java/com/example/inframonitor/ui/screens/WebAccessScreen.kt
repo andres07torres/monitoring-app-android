@@ -12,6 +12,8 @@ import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -22,7 +24,7 @@ import com.example.inframonitor.ui.theme.*
 
 @Composable
 fun WebAccessScreen() {
-    var urlInput by remember { mutableStateOf("https://") }
+    var urlInput by remember { mutableStateOf("") }
     var confirmedUrl by remember { mutableStateOf("") }
     val context = LocalContext.current
 
@@ -56,6 +58,10 @@ fun WebAccessScreen() {
                     placeholder = { Text("https://grafana.tudominio.com") },
                     leadingIcon = { Icon(Icons.Default.Language, contentDescription = null, tint = Primary) },
                     singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Uri,
+                        autoCorrectEnabled = false
+                    ),
                     shape = RoundedCornerShape(8.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Primary,

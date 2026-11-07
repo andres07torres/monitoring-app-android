@@ -17,7 +17,7 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
     private val _isConfigured = MutableStateFlow<Boolean?>(null)
     val isConfigured: StateFlow<Boolean?> = _isConfigured.asStateFlow()
 
-    private val _serverUrl = MutableStateFlow(SettingsManager.DEFAULT_SERVER_URL)
+    private val _serverUrl = MutableStateFlow("")
     val serverUrl: StateFlow<String> = _serverUrl.asStateFlow()
 
     private val _apiKey = MutableStateFlow("")
@@ -64,7 +64,7 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
         viewModelScope.launch {
             settingsManager.clearSettings()
             RetrofitClient.updateApiKey(null)
-            _serverUrl.value = SettingsManager.DEFAULT_SERVER_URL
+            _serverUrl.value = ""
             _apiKey.value = ""
             _isConfigured.value = false
         }
