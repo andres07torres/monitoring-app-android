@@ -56,6 +56,7 @@ dependencies {
     // Retrofit & OkHttp
     implementation(libs.retrofit)
     implementation(libs.retrofit.gson)
+    implementation(libs.retrofit.scalars)
     implementation(libs.okhttp.logging)
     implementation(libs.datastore.preferences)
     implementation(libs.androidx.work.runtime.ktx)

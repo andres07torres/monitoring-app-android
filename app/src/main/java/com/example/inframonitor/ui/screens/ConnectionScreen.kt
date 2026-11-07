@@ -23,9 +23,13 @@ import androidx.compose.ui.unit.dp
 import com.example.inframonitor.ui.theme.*
 
 @Composable
-fun ConnectionScreen(onConfigSaved: (String, String) -> Unit = { _, _ -> }) {
-    var urlInput by remember { mutableStateOf("https://api-infra.andr3sdev7.com") }
-    var apiKeyInput by remember { mutableStateOf("") }
+fun ConnectionScreen(
+    initialUrl: String = "",
+    initialApiKey: String = "",
+    onConfigSaved: (String, String) -> Unit = { _, _ -> }
+) {
+    var urlInput by remember { mutableStateOf(initialUrl) }
+    var apiKeyInput by remember { mutableStateOf(initialApiKey) }
     var passwordVisible by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
     
@@ -74,7 +78,7 @@ fun ConnectionScreen(onConfigSaved: (String, String) -> Unit = { _, _ -> }) {
                     onValueChange = { urlInput = it },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("URL Base (HTTPS)") },
-                    placeholder = { Text("https://api-infra.andr3sdev7.com") },
+                    placeholder = { Text("https://tudominio.com") },
                     leadingIcon = { Icon(Icons.Default.Link, contentDescription = null, tint = Primary) },
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp),
@@ -110,13 +114,16 @@ fun ConnectionScreen(onConfigSaved: (String, String) -> Unit = { _, _ -> }) {
                 Spacer(modifier = Modifier.height(24.dp))
                 
                 Button(
-                    onClick = { if (urlInput.isNotBlank()) onConfigSaved(urlInput, apiKeyInput) },
+                    onClick = { 
+                        val finalUrl = urlInput.ifBlank { com.example.inframonitor.data.SettingsManager.DEFAULT_SERVER_URL }
+                        onConfigSaved(finalUrl, apiKeyInput) 
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Primary),
                     shape = RoundedCornerShape(12.dp),
-                    enabled = urlInput.isNotBlank()
+                    enabled = true
                 ) {
                     Text(
                         "Conectar ahora",

@@ -17,25 +17,41 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
     private val _isConfigured = MutableStateFlow<Boolean?>(null)
     val isConfigured: StateFlow<Boolean?> = _isConfigured.asStateFlow()
 
+    private val _serverUrl = MutableStateFlow(SettingsManager.DEFAULT_SERVER_URL)
+    val serverUrl: StateFlow<String> = _serverUrl.asStateFlow()
+
+    private val _apiKey = MutableStateFlow("")
+    val apiKey: StateFlow<String> = _apiKey.asStateFlow()
+
     init {
         viewModelScope.launch {
-            val url = settingsManager.serverUrl.first() ?: SettingsManager.DEFAULT_SERVER_URL
-            val apiKey = settingsManager.apiKey.first()
+            val url = settingsManager.serverUrl.first()
+            val apiKey = settingsManager.apiKey.first() ?: ""
             
-            RetrofitClient.updateBaseUrl(url)
-            RetrofitClient.updateApiKey(apiKey)
+            _apiKey.value = apiKey
             
-            _isConfigured.value = url.isNotBlank()
+            if (!url.isNullOrBlank()) {
+                _serverUrl.value = url
+                RetrofitClient.updateBaseUrl(url)
+                RetrofitClient.updateApiKey(apiKey)
+                _isConfigured.value = true
+            } else {
+                _serverUrl.value = ""
+                _isConfigured.value = false
+            }
         }
     }
 
     fun saveConfig(url: String, apiKey: String) {
         viewModelScope.launch {
-            val cleanUrl = url.trim()
+            val cleanUrl = url.trim().ifBlank { SettingsManager.DEFAULT_SERVER_URL }
             val cleanApiKey = apiKey.trim()
             
             settingsManager.saveServerUrl(cleanUrl)
             settingsManager.saveApiKey(cleanApiKey)
+            
+            _serverUrl.value = cleanUrl
+            _apiKey.value = cleanApiKey
             
             RetrofitClient.updateBaseUrl(cleanUrl)
             RetrofitClient.updateApiKey(cleanApiKey)
@@ -48,6 +64,8 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
         viewModelScope.launch {
             settingsManager.clearSettings()
             RetrofitClient.updateApiKey(null)
+            _serverUrl.value = SettingsManager.DEFAULT_SERVER_URL
+            _apiKey.value = ""
             _isConfigured.value = false
         }
     }

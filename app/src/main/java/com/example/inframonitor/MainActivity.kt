@@ -42,9 +42,15 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                     false -> {
-                        ConnectionScreen(onConfigSaved = { url, apiKey ->
-                            connectionViewModel.saveConfig(url, apiKey)
-                        })
+                        val serverUrl by connectionViewModel.serverUrl.collectAsStateWithLifecycle()
+                        val apiKey by connectionViewModel.apiKey.collectAsStateWithLifecycle()
+                        ConnectionScreen(
+                            initialUrl = serverUrl,
+                            initialApiKey = apiKey,
+                            onConfigSaved = { url, key ->
+                                connectionViewModel.saveConfig(url, key)
+                            }
+                        )
                     }
                     true -> {
                         MainScreen(onLogout = {

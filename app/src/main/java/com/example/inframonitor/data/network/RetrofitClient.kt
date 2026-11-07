@@ -6,7 +6,12 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.converter.scalars.ScalarsConverterFactory
+import java.security.cert.X509Certificate
 import java.util.concurrent.TimeUnit
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManager
+import javax.net.ssl.X509TrustManager
 
 object RetrofitClient {
     private const val DEFAULT_HTTPS_URL = "https://api-infra.andr3sdev7.com/"
@@ -76,14 +81,39 @@ object RetrofitClient {
         chain.proceed(requestBuilder.build())
     }
 
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(60, TimeUnit.SECONDS)
-        .writeTimeout(60, TimeUnit.SECONDS)
-        .pingInterval(25, TimeUnit.SECONDS) // Keep-alive / Ping-pong para Cloudflare Zero Trust
-        .addInterceptor(logging)
-        .addInterceptor(authInterceptor)
-        .build()
+    private val client: OkHttpClient by lazy {
+        try {
+            val trustAllCerts = arrayOf<TrustManager>(object : X509TrustManager {
+                override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) {}
+                override fun checkServerTrusted(chain: Array<X509Certificate>, authType: String) {}
+                override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
+            })
+
+            val sslContext = SSLContext.getInstance("SSL")
+            sslContext.init(null, trustAllCerts, java.security.SecureRandom())
+            val sslSocketFactory = sslContext.socketFactory
+
+            OkHttpClient.Builder()
+                .sslSocketFactory(sslSocketFactory, trustAllCerts[0] as X509TrustManager)
+                .hostnameVerifier { _, _ -> true }
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(60, TimeUnit.SECONDS)
+                .writeTimeout(60, TimeUnit.SECONDS)
+                .pingInterval(25, TimeUnit.SECONDS)
+                .addInterceptor(logging)
+                .addInterceptor(authInterceptor)
+                .build()
+        } catch (e: Exception) {
+            OkHttpClient.Builder()
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(60, TimeUnit.SECONDS)
+                .writeTimeout(60, TimeUnit.SECONDS)
+                .pingInterval(25, TimeUnit.SECONDS)
+                .addInterceptor(logging)
+                .addInterceptor(authInterceptor)
+                .build()
+        }
+    }
 
     val instance: ServerApi
         get() {
@@ -91,6 +121,7 @@ object RetrofitClient {
                 _instance = Retrofit.Builder()
                     .baseUrl(currentBaseUrl)
                     .client(client)
+                    .addConverterFactory(ScalarsConverterFactory.create())
                     .addConverterFactory(GsonConverterFactory.create())
                     .build()
                     .create(ServerApi::class.java)
