@@ -104,8 +104,8 @@ fun ContainersContent(containers: List<ContainerResponse>, viewModel: Containers
     val filters = listOf("Todos", "Activos", "Detenidos")
 
     val filteredContainers = when (selectedFilter) {
-        "Activos" -> containers.filter { it.status == "running" }
-        "Detenidos" -> containers.filter { it.status != "running" }
+        "Activos" -> containers.filter { it.isRunning }
+        "Detenidos" -> containers.filter { !it.isRunning }
         else -> containers
     }
 
@@ -201,7 +201,7 @@ fun ContainersContent(containers: List<ContainerResponse>, viewModel: Containers
                 onAction = { action ->
                     when (action) {
                         "restart" -> viewModel.restartContainer(selectedContainer!!.id)
-                        "pause" -> viewModel.pauseContainer(selectedContainer!!.id, selectedContainer!!.status == "paused")
+                        "pause" -> viewModel.pauseContainer(selectedContainer!!.id, selectedContainer!!.isPaused)
                         "remove" -> viewModel.removeContainer(selectedContainer!!.id)
                         else -> viewModel.toggleContainer(selectedContainer!!.id, selectedContainer!!.status)
                     }
@@ -222,8 +222,8 @@ fun ContainerItem(
     onToggle: (Boolean) -> Unit,
     onClick: () -> Unit
 ) {
-    val isRunning = container.status == "running"
-    val isPaused = container.status == "paused"
+    val isRunning = container.isRunning
+    val isPaused = container.isPaused
 
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     val alpha by infiniteTransition.animateFloat(
@@ -361,7 +361,7 @@ fun ContainerActionsContent(container: ContainerResponse, onAction: (String) -> 
 
         HorizontalDivider(color = Outline, modifier = Modifier.padding(bottom = 16.dp))
 
-        if (container.status != "running") {
+        if (!container.isRunning) {
             ActionRow(Icons.Default.PlayArrow, "Iniciar instancia", Success) { onAction("start") }
         } else {
             ActionRow(Icons.Default.Stop, "Detener instancia", Error) { onAction("stop") }
@@ -369,7 +369,7 @@ fun ContainerActionsContent(container: ContainerResponse, onAction: (String) -> 
 
         ActionRow(Icons.Default.Refresh, "Reiniciar servicio", Accent) { onAction("restart") }
 
-        val isPaused = container.status == "paused"
+        val isPaused = container.isPaused
         ActionRow(
             if (isPaused) Icons.Default.PlayCircle else Icons.Default.Pause,
             if (isPaused) "Reanudar (Unpause)" else "Pausar instancia",

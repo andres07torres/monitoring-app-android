@@ -6,7 +6,25 @@ data class ContainerResponse(
     val status: String,
     val cpu_usage: Double? = null,
     val ram_usage: Double? = null
-)
+) {
+    val isRunning: Boolean
+        get() {
+            val s = status.lowercase().trim()
+            return s == "running" || s.startsWith("up")
+        }
+
+    val isPaused: Boolean
+        get() {
+            val s = status.lowercase().trim()
+            return s == "paused"
+        }
+
+    val isExited: Boolean
+        get() {
+            val s = status.lowercase().trim()
+            return s == "exited" || s.startsWith("exited") || s.startsWith("stopped")
+        }
+}
 
 data class HistoryPoint(
     val timestamp: Long,

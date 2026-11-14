@@ -19,7 +19,7 @@ class AlertWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
                 
                 for (container in containers) {
                     // Check status
-                    if (container.status == "exited") {
+                    if (container.isExited) {
                         notificationHelper.showNotification(
                             "Alerta de Contenedor",
                             "El contenedor ${container.name} se ha detenido inesperadamente."

@@ -47,7 +47,8 @@ class ContainersViewModel : ViewModel() {
     fun toggleContainer(containerId: String, currentStatus: String) {
         viewModelScope.launch {
             try {
-                val isRunning = currentStatus == "running"
+                val s = currentStatus.lowercase().trim()
+                val isRunning = s == "running" || s.startsWith("up")
                 val response = if (isRunning) {
                     RetrofitClient.instance.stopContainer(containerId)
                 } else {

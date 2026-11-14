@@ -117,7 +117,7 @@ fun DashboardScreen(viewModel: DashboardViewModel = viewModel()) {
 fun DashboardContent(data: DashboardData, onRefresh: () -> Unit) {
     val stats = data.stats
     val containers = data.containers
-    val activeContainers = containers.filter { it.status == "running" }
+    val activeContainers = containers.filter { it.isRunning }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
