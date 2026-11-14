@@ -1,5 +1,6 @@
 package com.example.inframonitor.utils
 
+import retrofit2.HttpException
 import retrofit2.Response as RetrofitResponse
 import okhttp3.Response as OkHttpResponse
 import java.io.InterruptedIOException
@@ -32,6 +33,9 @@ object NetworkErrorMapper {
 
     fun parseThrowable(throwable: Throwable): String {
         return when (throwable) {
+            is HttpException -> {
+                parseCode(throwable.code())
+            }
             is SocketTimeoutException, is InterruptedIOException -> {
                 "El servidor está tardando, la operación sigue en curso"
             }

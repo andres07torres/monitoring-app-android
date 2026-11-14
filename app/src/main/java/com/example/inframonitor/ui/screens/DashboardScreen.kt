@@ -23,6 +23,11 @@ import com.example.inframonitor.viewmodel.DashboardViewModel
 import com.example.inframonitor.ui.theme.*
 import java.util.Locale
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.ui.text.style.TextAlign
+
 @Composable
 fun DashboardScreen(viewModel: DashboardViewModel = viewModel()) {
     val uiState by viewModel.uiState.collectAsState()
@@ -36,18 +41,71 @@ fun DashboardScreen(viewModel: DashboardViewModel = viewModel()) {
                 DashboardContent(state.data, onRefresh = { viewModel.refresh() })
             }
             is UiState.Error -> {
-                Column(
-                    modifier = Modifier.align(Alignment.Center).padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                Card(
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .padding(24.dp)
+                        .fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = Surface),
+                    border = CardDefaults.outlinedCardBorder(),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
-                    Text(text = state.message, color = Error)
-                    Button(
-                        onClick = { viewModel.refresh() }, 
-                        modifier = Modifier.padding(top = 8.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Primary),
-                        shape = RoundedCornerShape(12.dp)
+                    Column(
+                        modifier = Modifier
+                            .padding(24.dp)
+                            .fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text("Reintentar")
+                        Box(
+                            modifier = Modifier
+                                .size(64.dp)
+                                .background(Error.copy(alpha = 0.1f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CloudOff,
+                                contentDescription = null,
+                                tint = Error,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                        
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        Text(
+                            text = "Error de Servidor (500)",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary
+                        )
+                        
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        Text(
+                            text = state.message,
+                            color = Error,
+                            style = MaterialTheme.typography.bodyMedium,
+                            textAlign = TextAlign.Center
+                        )
+                        
+                        Spacer(modifier = Modifier.height(20.dp))
+                        
+                        Button(
+                            onClick = { viewModel.refresh() },
+                            colors = ButtonDefaults.buttonColors(containerColor = Primary),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp)
+                        ) {
+                            Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                "Reintentar Conexión",
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
             }

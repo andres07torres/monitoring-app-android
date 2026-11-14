@@ -47,7 +47,8 @@ class AlertWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
             }
 
             // Also check for general alerts
-            val alerts = try { RetrofitClient.instance.getAlerts() } catch (e: Exception) { emptyList() }
+            val alertsRes = try { RetrofitClient.instance.getAlerts() } catch (e: Exception) { null }
+            val alerts = if (alertsRes?.isSuccessful == true) alertsRes.body() ?: emptyList() else emptyList()
             if (alerts.isNotEmpty()) {
                 val latest = alerts.last()
                 notificationHelper.showNotification(

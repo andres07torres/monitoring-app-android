@@ -40,10 +40,10 @@ interface ServerApi {
     suspend fun getLogs(@Path("container_id") containerId: String, @Query("tail") tail: Int = 100): Response<ContainerLogsResponse>
 
     @GET("api/v1/alerts")
-    suspend fun getAlerts(): List<AlertResponse>
+    suspend fun getAlerts(): Response<List<AlertResponse>>
 
     @GET("api/v1/logs")
-    suspend fun getGlobalLogs(): List<LogResponse>
+    suspend fun getGlobalLogs(): Response<List<LogResponse>>
 
     // Healthchecks
     @GET("api/v1/healthcheck")

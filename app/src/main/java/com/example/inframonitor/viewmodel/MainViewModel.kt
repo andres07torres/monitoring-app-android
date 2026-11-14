@@ -79,8 +79,10 @@ class MainViewModel : ViewModel() {
 
     private suspend fun fetchAlerts() {
         try {
-            val alerts = RetrofitClient.instance.getAlerts()
-            _alerts.value = alerts
+            val response = RetrofitClient.instance.getAlerts()
+            if (response.isSuccessful && response.body() != null) {
+                _alerts.value = response.body()!!
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }

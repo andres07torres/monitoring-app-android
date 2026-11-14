@@ -35,7 +35,11 @@ class AlertsViewModel : ViewModel() {
             _uiState.value = UiState.Loading
             try {
                 val response = RetrofitClient.instance.getAlerts()
-                _uiState.value = UiState.Success(response)
+                if (response.isSuccessful && response.body() != null) {
+                    _uiState.value = UiState.Success(response.body()!!)
+                } else {
+                    _uiState.value = UiState.Error(NetworkErrorMapper.parseResponseError(response))
+                }
             } catch (e: Exception) {
                 _uiState.value = UiState.Error(NetworkErrorMapper.parseThrowable(e))
             }
