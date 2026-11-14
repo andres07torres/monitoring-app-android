@@ -116,34 +116,38 @@ fun AlertItem(alert: AlertResponse) {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Surface),
-        border = BorderStroke(1.dp, Outline),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        border = BorderStroke(1.dp, Outline.copy(alpha = 0.6f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(modifier = Modifier.height(IntrinsicSize.Min)) {
             Box(
                 modifier = Modifier
-                    .width(6.dp)
+                    .width(5.dp)
                     .fillMaxHeight()
                     .background(color)
             )
-            Column(modifier = Modifier.padding(20.dp)) {
+            Column(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth()
+            ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        "ID: ${alert.id}", 
-                        fontWeight = FontWeight.Bold, 
-                        fontSize = 14.sp,
+                        "ID: ${alert.id.uppercase()}",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
                         color = TextPrimary
                     )
                     Surface(
-                        color = color.copy(alpha = 0.1f),
-                        shape = RoundedCornerShape(6.dp),
-                        border = BorderStroke(1.dp, color.copy(alpha = 0.2f))
+                        color = color.copy(alpha = 0.12f),
+                        shape = RoundedCornerShape(50),
+                        border = BorderStroke(1.dp, color.copy(alpha = 0.25f))
                     ) {
-                        val severityText = when(alert.severity.uppercase()) {
+                        val severityText = when (alert.severity.uppercase()) {
                             "HIGH", "CRITICAL" -> "CRÍTICA"
                             "MEDIUM", "WARNING" -> "ADVERTENCIA"
                             "LOW", "SUCCESS" -> "BAJA"
@@ -151,22 +155,24 @@ fun AlertItem(alert: AlertResponse) {
                         }
                         Text(
                             severityText,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = color,
-                            fontWeight = FontWeight.ExtraBold
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 11.sp
+                            ),
+                            color = color
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(10.dp))
                 Text(
                     alert.message,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = TextPrimary,
+                    color = TextPrimary.copy(alpha = 0.9f),
                     lineHeight = 20.sp
                 )
-                if (alert.timestamp != null) {
-                    Spacer(modifier = Modifier.height(12.dp))
+                if (!alert.timestamp.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         alert.timestamp,
                         style = MaterialTheme.typography.labelSmall,
@@ -175,6 +181,23 @@ fun AlertItem(alert: AlertResponse) {
                     )
                 }
             }
+        }
+    }
+}
+
+@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+@Composable
+fun AlertItemPreview() {
+    InfraMonitorTheme {
+        Box(modifier = Modifier.padding(16.dp)) {
+            AlertItem(
+                AlertResponse(
+                    id = "A0",
+                    severity = "LOW",
+                    message = "Todos los sistemas operan dentro de los parámetros normales. Sin alertas.",
+                    timestamp = null
+                )
+            )
         }
     }
 }
