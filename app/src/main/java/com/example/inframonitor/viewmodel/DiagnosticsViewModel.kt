@@ -82,15 +82,10 @@ class DiagnosticsViewModel : ViewModel() {
                     val containers = response.body()!!
                     _containersState.value = UiState.Success(containers)
                     
-                    val initialHealth = containers.associate { container ->
-                        val statusText = if (container.isRunning) {
-                            "OK (Docker Up)"
-                        } else {
-                            "FAIL (Detenido)"
-                        }
-                        container.id to statusText
+                    // Ejecuta el chequeo de salud backend para cada contenedor
+                    containers.forEach { container ->
+                        checkHealth(container.id, container.name)
                     }
-                    _healthStatus.value = initialHealth
                 } else {
                     _containersState.value = UiState.Error(NetworkErrorMapper.parseResponseError(response))
                 }
@@ -146,30 +141,10 @@ class DiagnosticsViewModel : ViewModel() {
         }
     }
 
-    private fun isNonHttpService(name: String): Boolean {
-        val lower = name.lowercase()
-        return lower.contains("db") || lower.contains("mysql") || lower.contains("postgres") ||
-               lower.contains("redis") || lower.contains("mailer") || lower.contains("worker") ||
-               lower.contains("queue") || lower.contains("mongo")
-    }
-
     fun checkHealth(containerId: String, containerName: String) {
         viewModelScope.launch {
-            if (isNonHttpService(containerName)) {
-                val container = (_containersState.value as? UiState.Success)?.data?.find { it.id == containerId }
-                val isRunning = container?.isRunning ?: true
-                val statusText = if (isRunning) "OK (Docker Up)" else "FAIL (Detenido)"
-                val current = _healthStatus.value.toMutableMap()
-                current[containerId] = statusText
-                _healthStatus.value = current
-                return@launch
-            }
-
             try {
-                // HTTP para la red interna de Docker
-                val testUrl = "http://$containerName/" 
-                
-                val response = RetrofitClient.instance.checkHealth(testUrl)
+                val response = RetrofitClient.instance.checkHealth(containerName)
                 val statusText = if (response.isSuccessful && response.body() != null) {
                     val code = response.body()!!.status
                     if (code in 200..299) {
