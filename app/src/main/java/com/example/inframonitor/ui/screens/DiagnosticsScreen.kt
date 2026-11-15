@@ -272,6 +272,7 @@ fun SystemDetailRow(label: String, value: String) {
 fun HealthItem(container: ContainerResponse, statusMap: Map<String, String>, viewModel: DiagnosticsViewModel) {
     val status = statusMap[container.id] ?: "Pendiente"
     val isOk = status.startsWith("OK")
+    val isPending = status == "Pendiente" || status == "Comprobando..."
 
     Surface(
         modifier = Modifier.padding(vertical = 4.dp).fillMaxWidth(),
@@ -284,9 +285,9 @@ fun HealthItem(container: ContainerResponse, statusMap: Map<String, String>, vie
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                if (isOk) Icons.Default.CheckCircle else Icons.Default.BugReport,
+                if (isPending) Icons.Default.HourglassEmpty else (if (isOk) Icons.Default.CheckCircle else Icons.Default.BugReport),
                 contentDescription = null,
-                tint = if (isOk) Success else (if (status == "Pendiente") TextMuted else Error),
+                tint = if (isPending) TextMuted else (if (isOk) Success else Error),
                 modifier = Modifier.size(24.dp)
             )
             Spacer(modifier = Modifier.width(12.dp))
@@ -297,11 +298,18 @@ fun HealthItem(container: ContainerResponse, statusMap: Map<String, String>, vie
             Text(
                 status,
                 style = MaterialTheme.typography.labelSmall,
-                color = if (isOk) Success else (if (status == "Pendiente") TextSecondary else Error),
+                color = if (isPending) TextSecondary else (if (isOk) Success else Error),
                 fontWeight = FontWeight.Bold
             )
-            IconButton(onClick = { viewModel.checkHealth(container.id, container.name) }) {
-                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Check", modifier = Modifier.size(16.dp), tint = Primary)
+            IconButton(
+                onClick = { viewModel.checkHealth(container.id, container.name) },
+                enabled = status != "Comprobando..."
+            ) {
+                if (status == "Comprobando...") {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = Primary)
+                } else {
+                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Check", modifier = Modifier.size(16.dp), tint = Primary)
+                }
             }
         }
     }

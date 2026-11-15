@@ -81,11 +81,7 @@ class DiagnosticsViewModel : ViewModel() {
                 if (response.isSuccessful && response.body() != null) {
                     val containers = response.body()!!
                     _containersState.value = UiState.Success(containers)
-                    
-                    // Ejecuta el chequeo de salud backend para cada contenedor
-                    containers.forEach { container ->
-                        checkHealth(container.id, container.name)
-                    }
+                    // No ejecutamos checkHealth automáticamente para dejar los items en estado "Pendiente"
                 } else {
                     _containersState.value = UiState.Error(NetworkErrorMapper.parseResponseError(response))
                 }
@@ -143,6 +139,11 @@ class DiagnosticsViewModel : ViewModel() {
 
     fun checkHealth(containerId: String, containerName: String) {
         viewModelScope.launch {
+            // Marca como comprobando manualmente mientras se realiza la petición
+            val loadingMap = _healthStatus.value.toMutableMap()
+            loadingMap[containerId] = "Comprobando..."
+            _healthStatus.value = loadingMap
+
             try {
                 val response = RetrofitClient.instance.checkHealth(containerName)
                 val statusText = if (response.isSuccessful && response.body() != null) {
