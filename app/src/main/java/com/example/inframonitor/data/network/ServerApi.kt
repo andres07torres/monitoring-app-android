@@ -47,7 +47,7 @@ interface ServerApi {
 
     // Healthchecks
     @GET("api/v1/healthcheck")
-    suspend fun checkHealth(@Query("container_name") containerName: String): Response<HealthCheckResponse>
+    suspend fun checkHealth(@Query("container") containerName: String): Response<HealthCheckResponse>
 
     // Terminal / Diagnostics
     @POST("api/v1/diagnostics/exec")
