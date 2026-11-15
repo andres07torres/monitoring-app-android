@@ -142,8 +142,13 @@ class DiagnosticsViewModel : ViewModel() {
                 val testUrl = "https://$containerName/health" 
                 
                 val response = RetrofitClient.instance.checkHealth(testUrl)
-                val statusText = if (response.isSuccessful) {
-                    "OK (${response.body()?.status})"
+                val statusText = if (response.isSuccessful && response.body() != null) {
+                    val code = response.body()!!.status
+                    if (code in 200..299) {
+                        "OK ($code)"
+                    } else {
+                        "FAIL ($code)"
+                    }
                 } else {
                     NetworkErrorMapper.parseResponseError(response)
                 }

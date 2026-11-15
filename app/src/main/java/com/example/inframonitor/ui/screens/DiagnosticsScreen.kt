@@ -271,7 +271,7 @@ fun SystemDetailRow(label: String, value: String) {
 @Composable
 fun HealthItem(container: ContainerResponse, statusMap: Map<String, String>, viewModel: DiagnosticsViewModel) {
     val status = statusMap[container.id] ?: "Pendiente"
-    val isOk = status.contains("OK")
+    val isOk = status.startsWith("OK")
 
     Surface(
         modifier = Modifier.padding(vertical = 4.dp).fillMaxWidth(),
