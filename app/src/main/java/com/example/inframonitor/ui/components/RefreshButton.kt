@@ -42,7 +42,7 @@ fun RefreshButton(
 @Composable
 fun RefreshButtonPreview() {
     com.example.inframonitor.ui.theme.InfraMonitorTheme {
-        androidx.compose.foundation.layout.Box(modifier = Modifier.size(80.dp), contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier.size(80.dp), contentAlignment = Alignment.Center) {
             RefreshButton(onClick = {})
         }
     }

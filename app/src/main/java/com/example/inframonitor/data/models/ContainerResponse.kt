@@ -7,16 +7,16 @@ data class ContainerResponse(
     val cpu_usage: Double? = null,
     val ram_usage: Double? = null
 ) {
-    val isRunning: Boolean
-        get() {
-            val s = status.lowercase().trim()
-            return s == "running" || s.startsWith("up")
-        }
-
     val isPaused: Boolean
         get() {
             val s = status.lowercase().trim()
-            return s == "paused"
+            return s == "paused" || s.contains("paused")
+        }
+
+    val isRunning: Boolean
+        get() {
+            val s = status.lowercase().trim()
+            return (s == "running" || s.startsWith("up")) && !isPaused
         }
 
     val isExited: Boolean

@@ -31,7 +31,7 @@ interface ServerApi {
     suspend fun unpauseContainer(@Path("container_id") id: String): Response<Unit>
 
     @DELETE("api/v1/containers/{container_id}")
-    suspend fun removeContainer(@Path("container_id") id: String): Response<Unit>
+    suspend fun removeContainer(@Path("container_id") id: String, @Query("force") force: Boolean = true): Response<Unit>
 
     @POST("api/v1/system/prune")
     suspend fun pruneSystem(): Response<Unit>

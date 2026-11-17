@@ -5,7 +5,6 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.example.inframonitor.data.network.RetrofitClient
 import com.example.inframonitor.utils.NotificationHelper
-import java.util.Locale
 
 class AlertWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
@@ -18,35 +17,20 @@ class AlertWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
                 val containers = response.body() ?: emptyList()
                 
                 for (container in containers) {
-                    // Check status
                     if (container.isExited) {
                         notificationHelper.showNotification(
                             "Alerta de Contenedor",
-                            "El contenedor ${container.name} se ha detenido inesperadamente."
+                            "El contenedor '${container.name}' se ha apagado."
                         )
-                    }
-
-                    // Check resource usage
-                    val cpu = container.cpu_usage ?: 0.0
-                    val ram = container.ram_usage ?: 0.0
-                    
-                    if (cpu > 85.0) {
+                    } else if (container.isPaused) {
                         notificationHelper.showNotification(
-                            "Uso Crítico de CPU",
-                            "El contenedor ${container.name} está usando ${String.format(Locale.getDefault(), "%.1f", cpu)}% de CPU."
-                        )
-                    }
-                    
-                    if (ram > 85.0) {
-                        notificationHelper.showNotification(
-                            "Uso Crítico de RAM",
-                            "El contenedor ${container.name} está usando ${String.format(Locale.getDefault(), "%.1f", ram)}% de RAM."
+                            "Alerta de Contenedor",
+                            "El contenedor '${container.name}' se pausó."
                         )
                     }
                 }
             }
 
-            // Also check for general alerts
             val alertsRes = try { RetrofitClient.instance.getAlerts() } catch (e: Exception) { null }
             val alerts = if (alertsRes?.isSuccessful == true) alertsRes.body() ?: emptyList() else emptyList()
             if (alerts.isNotEmpty()) {

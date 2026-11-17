@@ -13,6 +13,7 @@ object NetworkErrorMapper {
 
     fun parseCode(code: Int): String {
         return when (code) {
+            400 -> "No se pudo realizar la acción en el contenedor (HTTP 400 Bad Request)."
             524 -> "El servidor está tardando, la operación sigue en curso (Timeout de Cloudflare 524)"
             in 520..527 -> "El servidor está tardando, la operación sigue en curso (Respuesta Cloudflare $code)"
             504 -> "El servidor tardó demasiado en responder (Gateway Timeout 504). La operación puede seguir en ejecución."
@@ -24,6 +25,21 @@ object NetworkErrorMapper {
     }
 
     fun parseResponseError(response: RetrofitResponse<*>): String {
+        try {
+            val errorJson = response.errorBody()?.string()
+            if (!errorJson.isNullOrBlank()) {
+                if (errorJson.contains("\"detail\"")) {
+                    val detail = errorJson.substringAfter("\"detail\":").substringBefore("}").trim(' ', '"', '\n', '\r')
+                    if (detail.isNotBlank()) return detail
+                }
+                if (errorJson.contains("\"message\"")) {
+                    val message = errorJson.substringAfter("\"message\":").substringBefore("}").trim(' ', '"', '\n', '\r')
+                    if (message.isNotBlank()) return message
+                }
+            }
+        } catch (e: Exception) {
+            // Ignorar y usar parseCode
+        }
         return parseCode(response.code())
     }
 

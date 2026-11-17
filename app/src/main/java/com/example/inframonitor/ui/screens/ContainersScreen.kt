@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -32,6 +33,8 @@ import java.util.Locale
 @Composable
 fun ContainersScreen(viewModel: ContainersViewModel = viewModel()) {
     val uiState by viewModel.uiState.collectAsState()
+    val lastModifiedId by viewModel.lastModifiedContainerId.collectAsState()
+    val scrollTrigger by viewModel.scrollTrigger.collectAsState()
     val actionMessage by viewModel.actionMessage.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -43,7 +46,8 @@ fun ContainersScreen(viewModel: ContainersViewModel = viewModel()) {
 
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        containerColor = Background
+        containerColor = Background,
+        contentWindowInsets = WindowInsets(0.dp)
     ) { innerPadding ->
         Box(
             modifier = Modifier
@@ -60,7 +64,7 @@ fun ContainersScreen(viewModel: ContainersViewModel = viewModel()) {
                     )
                 }
                 is UiState.Success -> {
-                    ContainersContent(state.data, viewModel)
+                    ContainersContent(state.data, viewModel, lastModifiedId, scrollTrigger)
                 }
                 is UiState.Error -> {
                     Column(
@@ -99,7 +103,12 @@ fun ContainersScreen(viewModel: ContainersViewModel = viewModel()) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ContainersContent(containers: List<ContainerResponse>, viewModel: ContainersViewModel) {
+fun ContainersContent(
+    containers: List<ContainerResponse>,
+    viewModel: ContainersViewModel,
+    lastModifiedId: String? = null,
+    scrollTrigger: Int = 0
+) {
     var selectedFilter by remember { mutableStateOf("Todos") }
     val filters = listOf("Todos", "Activos", "Detenidos")
 
@@ -109,10 +118,18 @@ fun ContainersContent(containers: List<ContainerResponse>, viewModel: Containers
         else -> containers
     }
 
+    val listState = rememberLazyListState()
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
     var showBottomSheet by remember { mutableStateOf(false) }
     var selectedContainer by remember { mutableStateOf<ContainerResponse?>(null) }
+
+    LaunchedEffect(scrollTrigger, containers) {
+        if (scrollTrigger > 0 && filteredContainers.isNotEmpty()) {
+            listState.scrollToItem(0)
+            listState.animateScrollToItem(0)
+        }
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
@@ -169,6 +186,7 @@ fun ContainersContent(containers: List<ContainerResponse>, viewModel: Containers
         }
 
         LazyColumn(
+            state = listState,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
