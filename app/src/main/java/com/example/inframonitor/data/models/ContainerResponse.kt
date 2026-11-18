@@ -41,7 +41,12 @@ data class SystemStatsResponse(
     val ram_total_gb: Double,
     val disk_percent: Double? = null,
     val disk_used_gb: Double? = null,
-    val disk_total_gb: Double? = null
+    val disk_total_gb: Double? = null,
+    val os: String? = null,
+    val architecture: String? = null,
+    val uptime: String? = null,
+    val protected_ports: String? = null,
+    val zero_trust_tunnel: String? = null
 )
 
 // Tarea 2: Logs como lista de Strings

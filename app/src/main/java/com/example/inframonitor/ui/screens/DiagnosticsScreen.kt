@@ -252,7 +252,7 @@ fun SystemDetailsSection(details: Map<String, String>, isExpanded: Boolean, onEx
                     HorizontalDivider(modifier = Modifier.padding(bottom = 16.dp), color = Outline.copy(alpha = 0.5f))
                     details.forEach { (key, value) ->
                         SystemDetailRow(key, value)
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
                     }
                 }
             }
@@ -262,9 +262,25 @@ fun SystemDetailsSection(details: Map<String, String>, isExpanded: Boolean, onEx
 
 @Composable
 fun SystemDetailRow(label: String, value: String) {
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(label, style = MaterialTheme.typography.bodySmall, color = TextSecondary)
-        Text(value, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = TextPrimary)
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.Top
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = TextSecondary,
+            modifier = Modifier.weight(0.4f)
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.Bold,
+            color = TextPrimary,
+            textAlign = androidx.compose.ui.text.style.TextAlign.End,
+            modifier = Modifier.weight(0.6f).padding(start = 8.dp)
+        )
     }
 }
 

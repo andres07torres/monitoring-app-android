@@ -33,11 +33,11 @@ class DiagnosticsViewModel : ViewModel() {
 
     private val _systemDetails = MutableStateFlow<Map<String, String>>(
         mapOf(
-            "Sistema Operativo" to "Ubuntu 22.04.3 LTS (Docker Engine)",
-            "Túnel Zero Trust" to "Cloudflare Tunnel (HTTPS/WSS)",
-            "Arquitectura" to "x86_64",
-            "Uptime" to "12 días, 4 horas, 22 min",
-            "Puertos Protegidos" to "443 (HTTPS), 8443 (WSS)"
+            "Sistema Operativo" to "Cargando...",
+            "Túnel Zero Trust" to "Cargando...",
+            "Arquitectura" to "Cargando...",
+            "Uptime" to "Cargando...",
+            "Puertos Protegidos" to "Cargando..."
         )
     )
     val systemDetails: StateFlow<Map<String, String>> = _systemDetails.asStateFlow()
@@ -47,7 +47,30 @@ class DiagnosticsViewModel : ViewModel() {
 
     init {
         fetchContainers()
+        fetchSystemDetails()
         observeWebSocketMessages()
+    }
+
+    fun fetchSystemDetails() {
+        viewModelScope.launch {
+            try {
+                val response = RetrofitClient.instance.getSystemStats()
+                if (response.isSuccessful && response.body() != null) {
+                    val stats = response.body()!!
+                    _systemDetails.value = mapOf(
+                        "Sistema Operativo" to (stats.os ?: "Desconocido"),
+                        "Túnel Zero Trust" to (stats.zero_trust_tunnel ?: "Desconocido"),
+                        "Arquitectura" to (stats.architecture ?: "Desconocido"),
+                        "Uptime" to (stats.uptime ?: "Desconocido"),
+                        "Puertos Protegidos" to (stats.protected_ports ?: "Desconocido")
+                    )
+                }
+            } catch (e: Exception) {
+                _systemDetails.value = mapOf(
+                    "Error" to "No se pudieron cargar los detalles del sistema"
+                )
+            }
+        }
     }
 
     private fun observeWebSocketMessages() {
