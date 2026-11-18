@@ -34,24 +34,11 @@ fun AlertsScreen(viewModel: AlertsViewModel = viewModel()) {
                 AlertsContent(state.data, onRefresh = { viewModel.fetchAlerts() })
             }
             is UiState.Error -> {
-                Column(
-                    modifier = Modifier.align(Alignment.Center).padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = state.message,
-                        color = Error,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(
-                        onClick = { viewModel.fetchAlerts() },
-                        colors = ButtonDefaults.buttonColors(containerColor = Primary),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text("Reintentar")
-                    }
-                }
+                com.example.inframonitor.ui.components.ErrorStateCard(
+                    message = state.message,
+                    onRetry = { viewModel.fetchAlerts() },
+                    modifier = Modifier.align(Alignment.Center)
+                )
             }
         }
     }

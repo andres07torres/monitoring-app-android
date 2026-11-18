@@ -67,34 +67,11 @@ fun ContainersScreen(viewModel: ContainersViewModel = viewModel()) {
                     ContainersContent(state.data, viewModel, lastModifiedId, scrollTrigger)
                 }
                 is UiState.Error -> {
-                    Column(
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .padding(32.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(
-                            Icons.Default.Stop,
-                            contentDescription = null,
-                            tint = Error,
-                            modifier = Modifier.size(48.dp)
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = state.message,
-                            color = TextPrimary,
-                            fontWeight = FontWeight.Medium,
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                        )
-                        Button(
-                            onClick = { viewModel.fetchContainers() },
-                            modifier = Modifier.padding(top = 16.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Primary),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text("Reintentar Conexión")
-                        }
-                    }
+                    com.example.inframonitor.ui.components.ErrorStateCard(
+                        message = state.message,
+                        onRetry = { viewModel.fetchContainers() },
+                        modifier = Modifier.align(Alignment.Center)
+                    )
                 }
             }
         }

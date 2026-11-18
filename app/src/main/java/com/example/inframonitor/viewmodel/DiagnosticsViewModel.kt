@@ -64,10 +64,22 @@ class DiagnosticsViewModel : ViewModel() {
                         "Uptime" to (stats.uptime ?: "Desconocido"),
                         "Puertos Protegidos" to (stats.protected_ports ?: "Desconocido")
                     )
+                } else {
+                    _systemDetails.value = mapOf(
+                        "Sistema Operativo" to "Error al cargar",
+                        "Túnel Zero Trust" to "Error al cargar",
+                        "Arquitectura" to "Error al cargar",
+                        "Uptime" to "Error al cargar",
+                        "Puertos Protegidos" to "Error al cargar"
+                    )
                 }
             } catch (e: Exception) {
                 _systemDetails.value = mapOf(
-                    "Error" to "No se pudieron cargar los detalles del sistema"
+                    "Sistema Operativo" to "Error de red",
+                    "Túnel Zero Trust" to "Error de red",
+                    "Arquitectura" to "Error de red",
+                    "Uptime" to "Error de red",
+                    "Puertos Protegidos" to "Error de red"
                 )
             }
         }

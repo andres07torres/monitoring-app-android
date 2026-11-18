@@ -43,7 +43,10 @@ fun DiagnosticsScreen(viewModel: DiagnosticsViewModel = viewModel()) {
     ) {
         Spacer(modifier = Modifier.height(24.dp))
         
-        HeaderSection(onRefresh = { viewModel.fetchContainers() })
+        HeaderSection(onRefresh = { 
+            viewModel.fetchContainers()
+            viewModel.fetchSystemDetails()
+        })
 
         Spacer(modifier = Modifier.height(24.dp))
 
@@ -168,7 +171,13 @@ fun HealthStatusList(
             }
         }
         is UiState.Error -> {
-            Text("Error: ${state.message}", color = Error, modifier = Modifier.padding(vertical = 16.dp))
+            com.example.inframonitor.ui.components.ErrorStateCard(
+                message = state.message,
+                onRetry = { 
+                    viewModel.fetchContainers()
+                    viewModel.fetchSystemDetails()
+                }
+            )
         }
     }
 }

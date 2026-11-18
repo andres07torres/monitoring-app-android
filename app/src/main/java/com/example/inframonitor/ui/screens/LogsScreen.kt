@@ -70,7 +70,14 @@ fun LogsScreen(
         }
 
         Column(modifier = Modifier.padding(horizontal = 24.dp)) {
-            if (containersState is UiState.Success) {
+            if (containersState is UiState.Loading) {
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = Primary)
+                }
+            } else if (containersState is UiState.Success) {
                 val containers = (containersState as UiState.Success).data
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(containers) { container ->
@@ -99,6 +106,11 @@ fun LogsScreen(
                         )
                     }
                 }
+            } else if (containersState is UiState.Error) {
+                com.example.inframonitor.ui.components.ErrorStateCard(
+                    message = (containersState as UiState.Error).message,
+                    onRetry = { containersViewModel.fetchContainers() }
+                )
             }
             
             Spacer(modifier = Modifier.height(24.dp))
@@ -149,20 +161,11 @@ fun LogsScreen(
                         }
                     }
                     is UiState.Error -> {
-                        Column(
-                            modifier = Modifier.align(Alignment.Center).padding(24.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(text = state.message, color = Error)
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Button(
-                                onClick = { selectedContainerId?.let { logsViewModel.startLiveLogsWebSocket(it) } },
-                                colors = ButtonDefaults.buttonColors(containerColor = Primary),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Text("Reintentar Conexión")
-                            }
-                        }
+                        com.example.inframonitor.ui.components.ErrorStateCard(
+                            message = state.message,
+                            onRetry = { selectedContainerId?.let { logsViewModel.startLiveLogsWebSocket(it) } },
+                            modifier = Modifier.align(Alignment.Center)
+                        )
                     }
                 }
             }
